@@ -1,23 +1,479 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Functional KL Research Blog</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FKL — Measuring Trajectory Inference</title>
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-    <h1>Tracking the Untrackable</h1>
-    <p>How do we measure the paths of cells we can't see move?</p>
-    </body>
-</html>
-<div id="controls">
-    <button onclick="runAnimation('linear')">Model A: Simple Flow</button>
-    <button onclick="runAnimation('stochastic')">Model B: Complex Dynamics</button>
-</div>
-<div id="viz-container">
-    <svg id="trajectory-viz" width="600" height="400" style="border:1px solid #ccc"></svg>
-</div>
-<div id="metrics">
-    <p>Snapshot Similarity (W2): <span id="w2-score">0.99 (Excellent)</span></p>
-    <p><strong>Path Fidelity (FKL):</strong> <span id="fkl-score">--</span></p>
+
+<nav>
+  <a class="nav-brand" href="index.html">FKL <span>·</span> Path-Space Divergence</a>
+  <a href="index.html" class="active">Motivation</a>
+  <a href="method.html">Method</a>
+  <a href="results.html">Results</a>
+</nav>
+
+<div class="hero">
+  <div class="kicker">Research blog · ICML submission</div>
+  <h1>You can't judge a trajectory by its snapshots</h1>
+  <p class="lead">
+    In single-cell biology, we never see how individual cells move — only frozen
+    cross-sections of a population at discrete moments. Most methods for
+    reconstructing cell trajectories are evaluated on how well they reproduce
+    those snapshots. But two methods can match every snapshot perfectly while
+    telling completely opposite stories about the underlying dynamics.
+  </p>
+  <p class="lead">
+    This is the problem FKL — <em>functional KL divergence</em> — was built to fix.
+  </p>
 </div>
 
-<script src="https://d3js.org/d3.v7.min.js"></script>
+<div class="page">
+
+  <hr class="divider" />
+
+  <h2>The problem, in two acts</h2>
+  <p>
+    The animations below walk through the core issue. No equations yet —
+    just the geometric intuition that motivates everything that follows.
+  </p>
+
+  <!-- ═══ ACT 1 ═══ -->
+  <div class="anim-section">
+    <div class="anim-label">Act 1 of 2</div>
+    <div class="anim-title">What biology gives us</div>
+    <div class="anim-desc">
+      Measuring a cell destroys it. At each timepoint, we get a fresh batch of
+      cells — independent samples with no memory of where they came from.
+      Press <strong>Play</strong> to see the true trajectory gradually revealed,
+      while the pink dots show all we actually observe.
+    </div>
+
+    <canvas id="c1" height="220"></canvas>
+
+    <div class="controls">
+      <button class="btn" id="btn-play1">&#9654; Play</button>
+      <button class="btn" id="btn-reset1">Reset</button>
+      <div class="step-dots">
+        <div class="sdot active" id="sd0"></div>
+        <div class="sdot" id="sd1"></div>
+        <div class="sdot" id="sd2"></div>
+        <div class="sdot" id="sd3"></div>
+        <div class="sdot" id="sd4"></div>
+      </div>
+      <span style="font-size:12px;color:var(--text3);margin-left:4px;" id="act1-status">Snapshots visible — trajectory hidden</span>
+    </div>
+
+    <div class="legend">
+      <div class="leg"><div class="leg-line" style="background:#1D9E75;"></div> True trajectory (hidden from methods)</div>
+      <div class="leg"><div class="leg-dot" style="background:#D4537E;"></div> Observed snapshot (n = 100 cells)</div>
+    </div>
+  </div>
+
+  <div class="callout">
+    <strong>Key point:</strong> trajectory inference methods only ever see the pink dots.
+    The green path — the actual dynamics — is what they're trying to reconstruct.
+    With only 5 timepoints, that reconstruction is fundamentally ambiguous.
+  </div>
+
+  <!-- ═══ ACT 2 ═══ -->
+  <div class="anim-section">
+    <div class="anim-label">Act 2 of 2</div>
+    <div class="anim-title">Same snapshots, different stories</div>
+    <div class="anim-desc">
+      Two methods can reproduce the observed snapshots with nearly identical
+      accuracy — yet infer completely different dynamics. Toggle each method
+      on and off. Watch how the marginal scores barely move, while the
+      path-space divergence reveals a large difference.
+    </div>
+
+    <canvas id="c2" height="260"></canvas>
+
+    <div class="controls">
+      <button class="btn on" id="btn-A">Method A</button>
+      <button class="btn on" id="btn-B">Method B</button>
+      <button class="btn on" id="btn-snap2">Snapshots</button>
+    </div>
+
+    <div class="score-row" id="scores"></div>
+
+    <div class="legend" style="margin-top:12px;">
+      <div class="leg"><div class="leg-line" style="background:#7F77DD;"></div> Method A — smooth, low-noise paths</div>
+      <div class="leg"><div class="leg-line" style="background:#EF9F27;border-top: 1.5px dashed #BA7517; height:0;"></div> Method B — oscillatory paths</div>
+      <div class="leg"><div class="leg-dot" style="background:#D4537E;"></div> Shared snapshots</div>
+    </div>
+  </div>
+
+  <div class="callout">
+    <strong>This is the gap FKL closes.</strong> Marginal metrics like W₂ and MMD
+    are blind to path-level behavior. FKL compares the full distribution over
+    trajectories — the object we actually care about.
+  </div>
+
+  <hr class="divider" />
+
+  <h2>Why this matters</h2>
+  <p>
+    In single-cell genomics, trajectories encode <strong>fate decisions</strong> —
+    which stem cells become which cell types, and when. Getting the dynamics wrong
+    can lead to incorrect biological conclusions even if every snapshot looks right.
+  </p>
+  <p>
+    Current benchmarks in the field evaluate methods by their ability to predict
+    held-out marginals. This paper shows that five widely-used metrics can produce
+    <strong>inconsistent and sometimes contradictory rankings</strong> of the same
+    methods — and that FKL resolves those contradictions by operating directly
+    on path space.
+  </p>
+  <p>
+    In the next section, we explain how FKL is actually computed — using velocity
+    fields learned by neural networks, without ever needing to integrate a full ODE.
+  </p>
+
+  <div style="margin-top:2.5rem;">
+    <a href="method.html" style="
+      display: inline-block;
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--accent);
+      border: 0.5px solid var(--accent);
+      padding: 8px 20px;
+      border-radius: 6px;
+      text-decoration: none;
+      transition: background 0.15s;
+    ">How FKL works →</a>
+  </div>
+
+</div>
+
+<footer>
+  Based on <em>Relative Entropy Estimation in Function Space</em> · Anonymous Authors · ICML submission
+</footer>
+
+<script>
+(function () {
+  const c1 = document.getElementById('c1');
+  const ctx1 = c1.getContext('2d');
+  const c2 = document.getElementById('c2');
+  const ctx2 = c2.getContext('2d');
+
+  function resize() {
+    const w = c1.parentElement.clientWidth;
+    c1.width = w; c1.style.width = w + 'px';
+    c2.width = w; c2.style.width = w + 'px';
+    drawAct1(act1Reveal, true);
+    drawAct2();
+  }
+
+  const isDark = () => window.matchMedia('(prefers-color-scheme:dark)').matches;
+  const tc  = () => isDark() ? 'rgba(255,255,255,0.50)' : 'rgba(0,0,0,0.40)';
+  const tc2 = () => isDark() ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.20)';
+  const bgFill = () => isDark() ? '#1e1d1b' : '#f7f6f3';
+
+  /* ── SHARED ── */
+  function drawGrid(ctx, W, H, pad, labels) {
+    ctx.setLineDash([3, 5]);
+    ctx.lineWidth = 0.5;
+    labels.forEach((lbl, i) => {
+      const x = pad + (i / (labels.length - 1)) * (W - 2 * pad);
+      ctx.strokeStyle = tc2();
+      ctx.beginPath();
+      ctx.moveTo(x, 28); ctx.lineTo(x, H - 22);
+      ctx.stroke();
+      ctx.fillStyle = tc();
+      ctx.font = '11px -apple-system,sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(lbl, x, H - 6);
+    });
+    ctx.setLineDash([]);
+  }
+
+  /* ── ACT 1 ── */
+  const labels1 = ['t₀', 't₁', 't₂', 't₃', 't₄'];
+  const snapTs  = [0, 0.25, 0.5, 0.75, 1.0];
+
+  function truePt(t, W, H, pad) {
+    const x = pad + t * (W - 2 * pad);
+    const y = H / 2
+      - (H * 0.22) * Math.sin(t * Math.PI)
+      + (H * 0.06) * Math.sin(t * Math.PI * 3)
+      - (H * 0.04) * t;
+    return { x, y };
+  }
+
+  let act1Reveal = 0;
+  let act1Playing = false;
+  let act1Step = 0;
+  let act1Timer = null;
+
+  function drawAct1(revealT, showSnaps) {
+    const W = c1.width, H = c1.height, pad = 48;
+    ctx1.clearRect(0, 0, W, H);
+
+    ctx1.fillStyle = bgFill();
+    ctx1.fillRect(0, 0, W, H);
+
+    drawGrid(ctx1, W, H, pad, labels1);
+
+    /* ghost trail: faint full path always visible */
+    ctx1.beginPath();
+    ctx1.strokeStyle = isDark() ? 'rgba(29,158,117,0.12)' : 'rgba(29,158,117,0.10)';
+    ctx1.lineWidth = 2;
+    for (let i = 0; i <= 120; i++) {
+      const p = truePt(i / 120, W, H, pad);
+      i === 0 ? ctx1.moveTo(p.x, p.y) : ctx1.lineTo(p.x, p.y);
+    }
+    ctx1.stroke();
+
+    /* revealed portion */
+    if (revealT > 0) {
+      ctx1.beginPath();
+      ctx1.strokeStyle = '#1D9E75';
+      ctx1.lineWidth = 2.5;
+      ctx1.shadowColor = 'rgba(29,158,117,0.3)';
+      ctx1.shadowBlur = 4;
+      const steps = 160;
+      for (let i = 0; i <= steps; i++) {
+        const t = (i / steps) * revealT;
+        const p = truePt(t, W, H, pad);
+        i === 0 ? ctx1.moveTo(p.x, p.y) : ctx1.lineTo(p.x, p.y);
+      }
+      ctx1.stroke();
+      ctx1.shadowBlur = 0;
+    }
+
+    /* snapshots */
+    if (showSnaps) {
+      snapTs.forEach((st, i) => {
+        const p = truePt(st, W, H, pad);
+        /* halo */
+        ctx1.beginPath();
+        ctx1.arc(p.x, p.y, 13, 0, Math.PI * 2);
+        ctx1.fillStyle = 'rgba(212,83,126,0.12)';
+        ctx1.fill();
+        /* dot */
+        ctx1.beginPath();
+        ctx1.arc(p.x, p.y, 7, 0, Math.PI * 2);
+        ctx1.fillStyle = '#D4537E';
+        ctx1.fill();
+        ctx1.strokeStyle = isDark() ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.85)';
+        ctx1.lineWidth = 1.5;
+        ctx1.stroke();
+        /* label */
+        ctx1.fillStyle = tc();
+        ctx1.font = '11px -apple-system,sans-serif';
+        ctx1.textAlign = 'center';
+        ctx1.fillText('n=100', p.x, p.y - 18);
+      });
+    }
+
+    /* status overlay when nothing revealed */
+    if (revealT === 0) {
+      ctx1.fillStyle = tc();
+      ctx1.font = '13px -apple-system,sans-serif';
+      ctx1.textAlign = 'center';
+      ctx1.fillText('← press Play to reveal the hidden trajectory', W / 2, H / 2 + 40);
+    }
+  }
+
+  function updateDots(n) {
+    for (let i = 0; i < 5; i++)
+      document.getElementById('sd' + i).classList.toggle('active', i <= n);
+  }
+
+  const statusEl = document.getElementById('act1-status');
+
+  const act1Stages = [
+    { reveal: 0,    label: 'Snapshots visible — trajectory hidden' },
+    { reveal: 0.25, label: 'Trajectory revealed up to t₁ …' },
+    { reveal: 0.5,  label: 'Trajectory revealed up to t₂ …' },
+    { reveal: 0.75, label: 'Trajectory revealed up to t₃ …' },
+    { reveal: 1.0,  label: 'Full trajectory — methods never see this' },
+  ];
+
+  function runAct1Step() {
+    if (!act1Playing || act1Step >= act1Stages.length) {
+      act1Playing = false;
+      document.getElementById('btn-play1').textContent = '▶ Play';
+      return;
+    }
+    const s = act1Stages[act1Step];
+    act1Reveal = s.reveal;
+    drawAct1(act1Reveal, true);
+    updateDots(act1Step);
+    statusEl.textContent = s.label;
+    act1Step++;
+    act1Timer = setTimeout(runAct1Step, 1100);
+  }
+
+  document.getElementById('btn-play1').addEventListener('click', function () {
+    if (act1Playing) {
+      act1Playing = false;
+      clearTimeout(act1Timer);
+      this.textContent = '▶ Play';
+      return;
+    }
+    act1Playing = true;
+    act1Step = 0;
+    this.textContent = '❙❙ Pause';
+    runAct1Step();
+  });
+
+  document.getElementById('btn-reset1').addEventListener('click', function () {
+    act1Playing = false;
+    clearTimeout(act1Timer);
+    document.getElementById('btn-play1').textContent = '▶ Play';
+    act1Step = 0;
+    act1Reveal = 0;
+    drawAct1(0, true);
+    updateDots(0);
+    statusEl.textContent = 'Snapshots visible — trajectory hidden';
+  });
+
+  /* ── ACT 2 ── */
+  let showA = true, showB = true, showSnap2 = true;
+
+  const nTraj = 10;
+  const seedsA = Array.from({ length: nTraj }, (_, i) => (i - nTraj / 2) / (nTraj / 2));
+  const seedsB = Array.from({ length: nTraj }, (_, i) => (i - nTraj / 2) / (nTraj / 2));
+
+  function snapPts(W, H, pad) {
+    return [0, 0.25, 0.5, 0.75, 1.0].map(t => ({
+      t,
+      x: pad + t * (W - 2 * pad),
+      y: H / 2 + (H * 0.06) * Math.sin(t * Math.PI * 1.2)
+    }));
+  }
+
+  function ptA(t, seed, W, H, pad) {
+    const sp = snapPts(W, H, pad);
+    const baseY = H / 2 + (H * 0.06) * Math.sin(t * Math.PI * 1.2);
+    const x = pad + t * (W - 2 * pad);
+    const y = baseY + seed * (H * 0.10) * Math.sin(t * Math.PI);
+    return { x, y };
+  }
+
+  function ptB(t, seed, W, H, pad) {
+    const baseY = H / 2 + (H * 0.06) * Math.sin(t * Math.PI * 1.2);
+    const x = pad + t * (W - 2 * pad);
+    const osc = Math.sin(t * Math.PI * 4 + seed * Math.PI);
+    const y = baseY + seed * (H * 0.04) + osc * (H * 0.14) * t * (1 - t) * 4;
+    return { x, y };
+  }
+
+  function drawAct2() {
+    const W = c2.width, H = c2.height, pad = 48;
+    ctx2.clearRect(0, 0, W, H);
+    ctx2.fillStyle = bgFill();
+    ctx2.fillRect(0, 0, W, H);
+
+    drawGrid(ctx2, W, H, pad, ['t₀', 't₁', 't₂', 't₃', 't₄']);
+
+    const steps = 100;
+
+    /* method A */
+    if (showA) {
+      seedsA.forEach(s => {
+        ctx2.beginPath();
+        ctx2.strokeStyle = '#7F77DD';
+        ctx2.lineWidth = 1.8;
+        ctx2.globalAlpha = 0.4;
+        for (let i = 0; i <= steps; i++) {
+          const p = ptA(i / steps, s, W, H, pad);
+          i === 0 ? ctx2.moveTo(p.x, p.y) : ctx2.lineTo(p.x, p.y);
+        }
+        ctx2.stroke();
+      });
+      ctx2.globalAlpha = 1;
+    }
+
+    /* method B */
+    if (showB) {
+      seedsB.forEach(s => {
+        ctx2.beginPath();
+        ctx2.strokeStyle = '#EF9F27';
+        ctx2.lineWidth = 1.8;
+        ctx2.setLineDash([6, 3]);
+        ctx2.globalAlpha = 0.4;
+        for (let i = 0; i <= steps; i++) {
+          const p = ptB(i / steps, s, W, H, pad);
+          i === 0 ? ctx2.moveTo(p.x, p.y) : ctx2.lineTo(p.x, p.y);
+        }
+        ctx2.stroke();
+        ctx2.setLineDash([]);
+      });
+      ctx2.globalAlpha = 1;
+    }
+
+    /* annotation arrows for contrast */
+    if (showA && showB) {
+      const midX = pad + 0.5 * (W - 2 * pad);
+      ctx2.fillStyle = tc();
+      ctx2.font = '11px -apple-system,sans-serif';
+      ctx2.textAlign = 'center';
+      ctx2.fillText('← A stays near centre', midX - (W * 0.12), H * 0.22);
+      ctx2.fillText('B swings far →', midX + (W * 0.14), H * 0.80);
+    }
+
+    /* snapshots */
+    if (showSnap2) {
+      const sp = snapPts(W, H, pad);
+      sp.forEach(pt => {
+        ctx2.beginPath();
+        ctx2.arc(pt.x, pt.y, 13, 0, Math.PI * 2);
+        ctx2.fillStyle = 'rgba(212,83,126,0.12)';
+        ctx2.fill();
+
+        ctx2.beginPath();
+        ctx2.arc(pt.x, pt.y, 7, 0, Math.PI * 2);
+        ctx2.fillStyle = '#D4537E';
+        ctx2.fill();
+        ctx2.strokeStyle = isDark() ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.85)';
+        ctx2.lineWidth = 1.5;
+        ctx2.stroke();
+      });
+    }
+
+    /* score cards */
+    const scoreDiv = document.getElementById('scores');
+    const wA = showA ? '0.18' : '—';
+    const wB = showB ? '0.19' : '—';
+    const bothOn = showA && showB;
+    scoreDiv.innerHTML = `
+      <div class="score-box">
+        <span class="score-label">Method A · marginal W₂</span>
+        <span class="score-val" style="color:#7F77DD">${wA}</span>
+      </div>
+      <div class="score-box">
+        <span class="score-label">Method B · marginal W₂</span>
+        <span class="score-val" style="color:#BA7517">${wB}</span>
+      </div>
+      <div class="score-box">
+        <span class="score-label">Path-space FKL</span>
+        <span class="score-val" style="color:#993556">${bothOn ? 'large ↑' : '—'}</span>
+      </div>
+    `;
+  }
+
+  ['btn-A', 'btn-B', 'btn-snap2'].forEach((id, i) => {
+    document.getElementById(id).addEventListener('click', function () {
+      if (i === 0) showA = !showA;
+      else if (i === 1) showB = !showB;
+      else showSnap2 = !showSnap2;
+      this.classList.toggle('on', [showA, showB, showSnap2][i]);
+      drawAct2();
+    });
+  });
+
+  /* ── INIT ── */
+  window.addEventListener('resize', resize);
+  resize();
+  drawAct1(0, true);
+  drawAct2();
+})();
+</script>
+
+</body>
+</html>
