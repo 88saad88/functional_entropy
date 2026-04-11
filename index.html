@@ -8,3 +8,16 @@
     <p>How do we measure the paths of cells we can't see move?</p>
     </body>
 </html>
+<div id="controls">
+    <button onclick="runAnimation('linear')">Model A: Simple Flow</button>
+    <button onclick="runAnimation('stochastic')">Model B: Complex Dynamics</button>
+</div>
+<div id="viz-container">
+    <svg id="trajectory-viz" width="600" height="400" style="border:1px solid #ccc"></svg>
+</div>
+<div id="metrics">
+    <p>Snapshot Similarity (W2): <span id="w2-score">0.99 (Excellent)</span></p>
+    <p><strong>Path Fidelity (FKL):</strong> <span id="fkl-score">--</span></p>
+</div>
+
+<script src="https://d3js.org/d3.v7.min.js"></script>
