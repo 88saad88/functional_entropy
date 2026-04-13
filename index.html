@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FKL — Measuring Trajectory Inference</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<nav>
+  <a class="nav-brand" href="index.html">FKL <span>·</span> Path-Space Divergence</a>
+  <a href="index.html" class="active">Motivation</a>
+  <a href="method.html">Method</a>
+  <a href="results.html">Results</a>
+</nav>
+
+<div class="hero">
+  <div class="kicker">Research blog · ICML submission</div>
+  <h1>Same snapshots. Completely different stories.</h1>
+  <p class="lead">
+    In single-cell biology, measuring a cell destroys it. All we ever see are
+    frozen cross-sections — independent samples at a handful of timepoints.
+    The standard way to evaluate trajectory inference methods is to check how
+    well they reproduce those snapshots. But that test is blind to something
+    fundamental: <em>how the cells actually moved.</em>
+  </p>
+  <p class="lead">
+    FKL — functional KL divergence — is the first practical metric that
+    operates on full trajectory distributions rather than marginals.
+  </p>
+</div>
+
+<div class="page">
+
+  <hr class="divider" />
+
+  <h2>Why current metrics miss the point</h2>
+  <p>
+    The animation below shows the core problem. Three trajectory methods all
+    reproduce the same five snapshots with nearly identical scores —
+    yet their implied dynamics are completely different.
+    Step through it to see why marginal metrics can't tell them apart.
+  </p>
+
+  <!-- ═══ ANIMATION ═══ -->
+  <div class="anim-section">
+    <div class="stage">
+      <canvas id="cv" height="300"></canvas>
+      <div class="caption" id="cap">Press <strong>Next</strong> to begin.</div>
+    </div>
+
+    <div class="controls" style="margin-top:12px;">
+      <button class="btn primary" id="btn-next">Next →</button>
+      <button class="btn" id="btn-back">← Back</button>
+      <button class="btn" id="btn-reset">Reset</button>
+      <div class="progress" id="pips"></div>
+    </div>
+
+    <div class="legend" style="margin-top:10px;">
+      <div class="leg"><div class="ldot" style="background:#D4537E;"></div> Observed snapshot (n = 100 cells)</div>
+      <div class="leg"><div class="leg-line" style="background:#1D9E75;"></div> Method A — smooth drift</div>
+      <div class="leg"><div class="leg-line" style="background:#7F77DD;"></div> Method B — dips deep</div>
+      <div class="leg"><div class="leg-line" style="background:#EF9F27;"></div> Method C — arches high</div>
+    </div>
+  </div>
+
+  <div class="callout">
+    <strong>The non-identifiability problem.</strong> A set of time-indexed marginals
+    can be realised by infinitely many path measures. Matching snapshots well
+    tells you nothing about which of those path measures a method has found —
+    or whether it found a plausible one at all.
+  </div>
+
+  <hr class="divider" />
+
+  <h2>Why this matters for biology</h2>
+  <p>
+    Trajectories in single-cell data encode <strong>fate decisions</strong> —
+    which stem cells commit to which lineages, and when branching happens.
+    A method that gets the snapshots right but the dynamics wrong can lead to
+    incorrect biological conclusions: a smooth drift where there should be
+    a sharp bifurcation, or oscillations where there should be steady progression.
+  </p>
+  <p>
+    This paper benchmarks six state-of-the-art trajectory inference methods
+    using five standard marginal metrics. The metrics produce
+    <strong>inconsistent and contradictory rankings</strong> of the same methods
+    across timepoints and datasets. FKL resolves those contradictions by
+    measuring what actually matters — the distance between full trajectory distributions.
+  </p>
+
+  <div style="margin-top:2.5rem;">
+    <a href="method.html" style="
+      display:inline-block; font-size:14px; font-weight:500;
+      color:var(--accent); border:0.5px solid var(--accent);
+      padding:8px 20px; border-radius:6px; text-decoration:none;">
+      How FKL works →
+    </a>
+  </div>
+
+</div>
+
+<footer>
+  Based on <em>Relative Entropy Estimation in Function Space</em> · Anonymous Authors · ICML submission
+</footer>
+
+<script>
+(function () {
+  const cv = document.getElementById('cv');
+  const ctx = cv.getContext('2d');
+
+  const dark   = () => window.matchMedia('(prefers-color-scheme:dark)').matches;
+  const tc     = () => dark() ? 'rgba(255,255,255,0.45)' : 'rgba(0,0,0,0.38)';
+  const tc2    = () => dark() ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.10)';
+  const bgc    = () => dark() ? '#1e1d1b' : '#ffffff';
+
+  const capEl   = document.getElementById('cap');
+  const pipWrap = document.getElementById('pips');
+
+  let W, H, PAD;
+  function setup() {
+    W = cv.parentElement.clientWidth;
+    H = Math.round(W * 0.44);
+    cv.width = W; cv.height = H;
+    cv.style.height = H + 'px';
+    PAD = Math.round(W * 0.08);
+  }
+
+  const SNAP_T = [0, 0.25, 0.5, 0.75, 1.0];
+
+  /* snapshot y-positions — shared by all paths */
+  const SNAP_Y = [0.38, 0.72, 0.50, 0.68, 0.42];
+
+  function snapPt(t) {
+    const i = SNAP_T.indexOf(t);
+    return { x: PAD + t * (W - 2 * PAD), y: H * SNAP_Y[i] };
+  }
+
+  /* cubic Hermite basis functions */
+  function h00(u){ return (1+2*u)*(1-u)*(1-u); }
+  function h10(u){ return u*(1-u)*(1-u); }
+  function h01(u){ return u*u*(3-2*u); }
+  function h11(u){ return u*u*(u-1); }
+
+  /* interpolate piecewise through SNAP_Y control points
+     with per-segment tangent offsets that vanish at endpoints
+     so every path passes exactly through every dot */
+  function makePath(tangentOffsets) {
+    return function(t) {
+      /* find which segment we're in */
+      let seg = 0;
+      for (let i = 0; i < SNAP_T.length - 1; i++) {
+        if (t >= SNAP_T[i] && t <= SNAP_T[i + 1]) { seg = i; break; }
+      }
+      const t0 = SNAP_T[seg], t1 = SNAP_T[seg + 1];
+      const y0 = SNAP_Y[seg],  y1 = SNAP_Y[seg + 1];
+      const u  = (t - t0) / (t1 - t0);
+
+      /* base tangents from finite differences */
+      const m0base = seg > 0
+        ? (SNAP_Y[seg+1] - SNAP_Y[seg-1]) / (SNAP_T[seg+1] - SNAP_T[seg-1])
+        : (SNAP_Y[1] - SNAP_Y[0]) / (SNAP_T[1] - SNAP_T[0]);
+      const m1base = seg < SNAP_T.length - 2
+        ? (SNAP_Y[seg+2] - SNAP_Y[seg]) / (SNAP_T[seg+2] - SNAP_T[seg])
+        : (SNAP_Y[seg+1] - SNAP_Y[seg]) / (SNAP_T[seg+1] - SNAP_T[seg]);
+
+      const dt = t1 - t0;
+      const m0 = (m0base + tangentOffsets[seg])   * dt;
+      const m1 = (m1base + tangentOffsets[seg + 1]) * dt;
+
+      return h00(u)*y0 + h10(u)*m0 + h01(u)*y1 + h11(u)*m1;
+    };
+  }
+
+  const PATHS = [
+    /* Method A — smooth, gentle drift */
+    { col: '#1D9E75', dash: [], label: 'Method A',
+      fn: makePath([0, -0.3, 0.2, -0.2, 0]) },
+    /* Method B — dips deep between snapshots */
+    { col: '#7F77DD', dash: [], label: 'Method B',
+      fn: makePath([0, 1.4, -1.2, 1.0, 0]) },
+    /* Method C — arches high between snapshots */
+    { col: '#EF9F27', dash: [6, 3], label: 'Method C',
+      fn: makePath([0, -1.6, 1.3, -1.1, 0]) },
+  ];
+
+  function drawPath(p, alpha) {
+    ctx.save();
+    ctx.beginPath();
+    ctx.strokeStyle = p.col;
+    ctx.lineWidth = 2;
+    ctx.globalAlpha = alpha;
+    ctx.setLineDash(p.dash);
+    for (let i = 0; i <= 120; i++) {
+      const t = i / 120;
+      const x = PAD + t * (W - 2 * PAD);
+      const y = H * p.fn(t);
+      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.restore();
+  }
+
+  function drawSnap(t, pulse) {
+    const { x, y } = snapPt(t);
+    if (pulse) {
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(x, y, 15, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(212,83,126,0.15)';
+      ctx.fill();
+      ctx.restore();
+    }
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(x, y, 7, 0, Math.PI * 2);
+    ctx.fillStyle = '#D4537E';
+    ctx.fill();
+    ctx.strokeStyle = dark() ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.9)';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function drawGrid() {
+    SNAP_T.forEach((t, i) => {
+      const x = PAD + t * (W - 2 * PAD);
+      ctx.save();
+      ctx.strokeStyle = tc2();
+      ctx.lineWidth = 0.5;
+      ctx.setLineDash([3, 5]);
+      ctx.beginPath();
+      ctx.moveTo(x, 20); ctx.lineTo(x, H - 18);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.font = '11px -apple-system,sans-serif';
+      ctx.fillStyle = tc();
+      ctx.textAlign = 'center';
+      ctx.fillText(['t₀', 't₁', 't₂', 't₃', 't₄'][i], x, H - 4);
+      ctx.restore();
+    });
+  }
+
+  function roundRect(cx, x, y, w, h, r) {
+    cx.beginPath();
+    cx.moveTo(x + r, y);
+    cx.lineTo(x + w - r, y); cx.quadraticCurveTo(x + w, y, x + w, y + r);
+    cx.lineTo(x + w, y + h - r); cx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+    cx.lineTo(x + r, y + h); cx.quadraticCurveTo(x, y + h, x, y + h - r);
+    cx.lineTo(x, y + r); cx.quadraticCurveTo(x, y, x + r, y);
+    cx.closePath();
+  }
+
+  function scoreTag(col, methodName, score, tPos) {
+    const x = PAD + tPos * (W - 2 * PAD);
+    const y = 28;
+    const tw = 88, th = 38;
+    ctx.save();
+    ctx.fillStyle = dark() ? 'rgba(24,23,21,0.93)' : 'rgba(250,249,247,0.96)';
+    ctx.strokeStyle = col;
+    ctx.lineWidth = 1;
+    roundRect(ctx, x - tw / 2, y, tw, th, 6);
+    ctx.fill(); ctx.stroke();
+    ctx.font = '500 11px -apple-system,sans-serif';
+    ctx.fillStyle = col;
+    ctx.textAlign = 'center';
+    ctx.fillText(methodName, x, y + 15);
+    ctx.font = '12px -apple-system,sans-serif';
+    ctx.fillStyle = tc();
+    ctx.fillText(score, x, y + 30);
+    ctx.restore();
+  }
+
+  function base() {
+    ctx.clearRect(0, 0, W, H);
+    ctx.fillStyle = bgc();
+    ctx.fillRect(0, 0, W, H);
+    drawGrid();
+  }
+
+  const SCENES = [
+    {
+      cap: `<strong>Five snapshots, three methods.</strong> Each method was trained on the same five timepoints (pink dots). All three pass through every dot with nearly identical Wasserstein-2 scores — a standard measure of how well simulated cells match observed ones. So which one is right?`,
+      draw() {
+        base();
+        PATHS.forEach(p => drawPath(p, 0.18));
+        SNAP_T.forEach(t => drawSnap(t, false));
+      }
+    },
+    {
+      cap: `<strong>Method A</strong> infers smooth, gradual trajectories — cells drift steadily from start to finish. Wasserstein-2 (W₂) = 0.18 at every validation snapshot.`,
+      draw() {
+        base();
+        PATHS.slice(1).forEach(p => drawPath(p, 0.10));
+        drawPath(PATHS[0], 0.85);
+        SNAP_T.forEach(t => drawSnap(t, false));
+        scoreTag(PATHS[0].col, 'Method A', 'W₂ = 0.18', 0.22);
+      }
+    },
+    {
+      cap: `<strong>Method B</strong> infers paths that dip sharply between timepoints before landing on the same dots. W₂ = 0.17 — nearly identical score, completely different biology.`,
+      draw() {
+        base();
+        [PATHS[0], PATHS[2]].forEach(p => drawPath(p, 0.10));
+        drawPath(PATHS[1], 0.85);
+        SNAP_T.forEach(t => drawSnap(t, false));
+        scoreTag(PATHS[1].col, 'Method B', 'W₂ = 0.17', 0.55);
+      }
+    },
+    {
+      cap: `<strong>All three methods — same dots, three different stories.</strong> All W₂ scores are indistinguishable. FKL sees through this: it measures the distance between the full path distributions, not just where they land at each timepoint.`,
+      draw() {
+        base();
+        PATHS.forEach(p => drawPath(p, 0.75));
+        SNAP_T.forEach(t => drawSnap(t, false));
+        /* score badge */
+        const bw = Math.round(W * 0.46), bh = 68, bx = W - PAD - bw, by = 18;
+        ctx.save();
+        ctx.fillStyle = dark() ? 'rgba(24,23,21,0.95)' : 'rgba(250,249,247,0.97)';
+        ctx.strokeStyle = dark() ? 'rgba(255,255,255,0.10)' : 'rgba(0,0,0,0.09)';
+        ctx.lineWidth = 0.5;
+        roundRect(ctx, bx, by, bw, bh, 8);
+        ctx.fill(); ctx.stroke();
+        ctx.font = '11px -apple-system,sans-serif';
+        ctx.fillStyle = tc();
+        ctx.textAlign = 'center';
+        ctx.fillText('Wasserstein-2 score — all methods', bx + bw / 2, by + 17);
+        const cols = [PATHS[0].col, PATHS[1].col, PATHS[2].col];
+        const labels = ['A: 0.18', 'B: 0.17', 'C: 0.18'];
+        labels.forEach((lbl, i) => {
+          ctx.font = '500 13px -apple-system,sans-serif';
+          ctx.fillStyle = cols[i];
+          ctx.textAlign = 'center';
+          ctx.fillText(lbl, bx + bw * (0.2 + i * 0.3), by + 40);
+        });
+        ctx.font = '11px -apple-system,sans-serif';
+        ctx.fillStyle = tc();
+        ctx.textAlign = 'center';
+        ctx.fillText('← cannot be told apart by this metric', bx + bw / 2, by + 57);
+        ctx.restore();
+        /* path labels at midpoints */
+        PATHS.forEach((p, i) => {
+          const t = [0.3, 0.55, 0.72][i];
+          const x = PAD + t * (W - 2 * PAD);
+          const y = H * p.fn(t) + [-18, 16, -18][i];
+          ctx.save();
+          ctx.font = '500 11px -apple-system,sans-serif';
+          ctx.fillStyle = p.col;
+          ctx.textAlign = 'center';
+          ctx.fillText(p.label, x, y);
+          ctx.restore();
+        });
+      }
+    },
+  ];
+
+  const N = SCENES.length;
+  let step = 0;
+
+  for (let i = 0; i < N; i++) {
+    const d = document.createElement('div');
+    d.className = 'pip'; d.id = 'pip' + i;
+    pipWrap.appendChild(d);
+  }
+
+  function goTo(s) {
+    step = Math.max(0, Math.min(N - 1, s));
+    SCENES[step].draw();
+    capEl.innerHTML = SCENES[step].cap;
+    for (let i = 0; i < N; i++)
+      document.getElementById('pip' + i).classList.toggle('done', i <= step);
+    document.getElementById('btn-back').disabled = step === 0;
+    document.getElementById('btn-next').textContent = step === N - 1 ? '↺ Replay' : 'Next →';
+  }
+
+  document.getElementById('btn-next').addEventListener('click', () => {
+    goTo(step === N - 1 ? 0 : step + 1);
+  });
+  document.getElementById('btn-back').addEventListener('click', () => goTo(step - 1));
+  document.getElementById('btn-reset').addEventListener('click', () => goTo(0));
+
+  window.addEventListener('resize', () => { setup(); goTo(step); });
+  window.matchMedia('(prefers-color-scheme:dark)').addEventListener('change', () => goTo(step));
+
+  setup();
+  goTo(0);
+})();
+</script>
+
+</body>
+</html>
