@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>How FKL Works — FKL Blog</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-chtml.min.js"></script>
+  <style>
+    .math-block {
+      overflow-x: auto;
+      padding: 1.1rem 1.4rem;
+      background: var(--bg2);
+      border-radius: var(--radius);
+      border: 0.5px solid var(--border);
+      margin: 1.25rem 0;
+      line-height: 2.2;
+    }
+    .math-block.key {
+      border-color: var(--accent);
+      border-width: 1px;
+    }
+    .math-label {
+      font-size: 11px;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--text3);
+      display: block;
+      margin-bottom: 0.4rem;
+    }
+    .math-label.accent { color: var(--accent); }
+
+    .assumption {
+      border: 0.5px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1rem 1.25rem;
+      margin: 1rem 0;
+    }
+    .assumption-tag {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      padding: 2px 10px;
+      border-radius: 4px;
+      margin-bottom: 0.5rem;
+      background: var(--bg3);
+      color: var(--accent);
+    }
+    .assumption h3 { font-size: 0.95rem; font-weight: 500; margin: 0 0 0.4rem; }
+    .assumption p  { font-size: 14px; margin: 0; color: var(--text2); line-height: 1.65; }
+    .assumption p + p { margin-top: 0.5rem; }
+
+    .factor-table { margin: 0.75rem 0 1rem; }
+    .factor-row {
+      display: grid;
+      grid-template-columns: 160px 1fr;
+      gap: 0 20px;
+      padding: 0.65rem 0;
+      border-top: 0.5px solid var(--border);
+      align-items: start;
+    }
+    .factor-row:last-child { border-bottom: 0.5px solid var(--border); }
+    .factor-key {
+      font-family: var(--font-mono, monospace);
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--accent);
+      line-height: 1.5;
+      padding-top: 1px;
+      word-break: break-all;
+    }
+    .factor-desc {
+      font-size: 14px;
+      color: var(--text2);
+      line-height: 1.65;
+    }
+    @media (max-width: 480px) {
+      .factor-row { grid-template-columns: 1fr; gap: 4px 0; }
+    }
+
+    .sim-wrap {
+      border: 0.5px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--bg2);
+      overflow: hidden;
+      margin: 1.25rem 0;
+    }
+    .sim-canvas { display: block; width: 100%; }
+    .sim-controls {
+      padding: 10px 14px;
+      border-top: 0.5px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      flex-wrap: wrap;
+    }
+    .sim-controls label { font-size: 12px; color: var(--text3); }
+    .sim-controls input[type=range] { flex: 1; min-width: 80px; }
+    .sim-readout { font-size: 12px; font-weight: 500; color: var(--accent); min-width: 28px; }
+    .diagram-caption { font-size: 12px; color: var(--text3); margin-top: 6px; text-align: center; }
+
+    .step-row {
+      display: grid;
+      grid-template-columns: 28px 1fr;
+      gap: 0 14px;
+      margin-bottom: 1.1rem;
+      align-items: start;
+    }
+    .step-num {
+      width: 26px; height: 26px;
+      border-radius: 50%;
+      border: 0.5px solid var(--border2);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12px; font-weight: 500; color: var(--accent);
+      flex-shrink: 0; margin-top: 2px;
+    }
+    .step-body h4 { font-size: 14px; font-weight: 500; margin: 0 0 0.2rem; }
+    .step-body p  { font-size: 14px; color: var(--text2); margin: 0; line-height: 1.65; }
+  </style>
+</head>
+<body>
+
+<nav>
+  <a class="nav-brand" href="index.html">FKL <span>·</span> Path-Space Divergence</a>
+  <a href="index.html">Motivation</a>
+  <a href="method.html" class="active">Method</a>
+  <a href="results.html">Results</a>
+</nav>
+
+<div class="hero">
+  <div class="kicker">Method</div>
+  <h1>Comparing distributions over trajectories</h1>
+  <p class="lead">
+    FKL measures the KL divergence between two probability measures over
+    <em>function space</em> — the full space of possible trajectories.
+    Here's the idea, the two conditions required, and the formula that makes it computable.
+  </p>
+</div>
+
+<div class="page">
+
+  <hr class="divider" />
+
+  <!-- ── SECTION 1 ── -->
+  <h2>The object we want to measure</h2>
+
+  <p>
+    A trajectory inference method doesn't output a single path — it outputs a
+    <strong>distribution over paths</strong>. Call it \(\nu\). Two methods give
+    us \(\nu^A\) and \(\nu^B\). We want one number that captures how different
+    these two distributions are, across the entire space of possible trajectories.
+  </p>
+
+  <p>
+    The natural choice is the KL divergence:
+  </p>
+
+  <div class="math-block">
+    <span class="math-label">KL divergence on path space</span>
+    \[
+      \mathrm{KL}(\nu^A \| \nu^B)
+      = \int \log \frac{d\nu^A}{d\nu^B}(x)\; d\nu^A(x)
+    \]
+  </div>
+
+  <p>
+    The term \(\tfrac{d\nu^A}{d\nu^B}(x)\) is the <strong>density ratio</strong>:
+    for each trajectory \(x\), how much more likely is it under \(\nu^A\) than
+    under \(\nu^B\)? When the two distributions agree, this ratio is 1 everywhere
+    and KL = 0. When they diverge, KL grows.
+  </p>
+
+  <p>
+    The catch: in infinite-dimensional spaces this density ratio is extremely
+    easy to break. Without the right setup, it doesn't exist and
+    \(\mathrm{KL} = +\infty\) trivially. Two conditions fix this.
+  </p>
+
+  <hr class="divider" />
+
+  <!-- ── SECTION 2 ── -->
+  <h2>Two conditions that make it well-defined</h2>
+
+  <div class="assumption">
+    <div class="assumption-tag">Assumption 1</div>
+    <h3>Absolute continuity — \(\nu^A \ll \nu^B\)</h3>
+    <p>
+      Every set of trajectories that is impossible under \(\nu^B\) must also be
+      impossible under \(\nu^A\). If \(\nu^A\) places mass somewhere \(\nu^B\)
+      has ruled out entirely, the density ratio doesn't exist and KL blows up.
+    </p>
+    <p>
+      In practice this is a mild condition: it says the two methods are exploring
+      roughly the same territory in trajectory space, just with different weights.
+    </p>
+  </div>
+
+  <div class="assumption">
+    <div class="assumption-tag">Assumption 2</div>
+    <h3>Cameron–Martin support — trajectories must be smooth enough</h3>
+    <p>
+      In infinite dimensions, two Gaussian measures are almost always
+      <em>mutually singular</em> — they live on completely disjoint sets, making
+      any density ratio undefined. The only exception is when their means differ
+      by a vector in the <strong>Cameron–Martin space</strong> \(H_C\):
+      the subspace of functions reachable by the covariance operator \(C\).
+    </p>
+    <p>
+      Requiring both \(\nu^A\) and \(\nu^B\) to be supported on \(H_C\) ensures
+      they share enough common structure for the density ratio to exist.
+      In practice this means using a <strong>smooth reference noise</strong>
+      (Matérn covariance) rather than white noise — which also happens to produce
+      more realistic trajectory priors.
+    </p>
+  </div>
+
+  <div class="callout">
+    Together these two conditions guarantee the KL is finite and the density ratio
+    exists. They also unlock the Cameron–Martin theorem, which gives an explicit
+    formula for how density ratios shift when you move in function space — and
+    that formula is what leads to the tractable estimator below.
+  </div>
+
+  <hr class="divider" />
+
+  <!-- ── SECTION 3 ── -->
+  <h2>From density ratios to velocity fields</h2>
+
+  <p>
+    Rather than estimating the density ratio directly — which is hard — FKL
+    re-expresses the KL in terms of <strong>velocity fields</strong>.
+  </p>
+  <p>
+    The idea: for each method, build a continuous flow that transports a
+    reference Gaussian \(\mu_0 = \mathcal{N}(0, C)\) toward the method's
+    trajectory distribution \(\nu\). This flow is parameterised by a
+    velocity field \(v_t(x)\) — a function that, at each time \(t\) and
+    location \(x\) in function space, says which direction the distribution
+    is moving. The velocity field is learned by a neural network.
+  </p>
+  <p>
+    The simulation below lets you see what this looks like. Each arrow shows
+    the velocity at a grid point. Method A (purple) drifts smoothly;
+    Method B (amber) oscillates. At the same location \(x\) and time \(t\),
+    the two arrows point in different directions — and that difference is
+    exactly what FKL measures.
+  </p>
+
+  <!-- velocity field simulation -->
+  <div class="sim-wrap">
+    <canvas id="vel-cv" class="sim-canvas" height="200"></canvas>
+    <div class="sim-controls">
+      <label>time  t =</label>
+      <input type="range" id="t-slider" min="0" max="100" value="50" step="1" />
+      <span class="sim-readout" id="t-val">0.50</span>
+      <label style="margin-left:8px;">show:</label>
+      <button class="btn on" id="tog-A" style="font-size:11px;padding:3px 10px;">Method A</button>
+      <button class="btn on" id="tog-B" style="font-size:11px;padding:3px 10px;">Method B</button>
+    </div>
+  </div>
+  <p class="diagram-caption">
+    Velocity fields \(v_t^A\) (purple) and \(v_t^B\) (amber) at a given \(t\).
+    Drag the slider to watch how the disagreement evolves over time.
+  </p>
+
+  <hr class="divider" />
+
+  <!-- ── SECTION 4 ── -->
+  <h2>The key formula</h2>
+
+  <p>
+    Combining the Cameron–Martin theorem with the continuity equation for the
+    flow, the paper derives a closed-form expression for FKL purely in terms
+    of velocity fields:
+  </p>
+
+  <div class="math-block key">
+    <span class="math-label accent">Functional KL — main result (Eq. 9)</span>
+    \[
+      \mathrm{KL}(\nu^A \| \nu^B)
+      \;=\;
+      \int_0^1 \!\int_H
+        \frac{t}{1-t}
+        \;\bigl\|v_t^A(x) - v_t^B(x)\bigr\|_{C^{1/2}H}^{\,2}
+      \;d\mu^A_t(x)\;dt
+    \]
+  </div>
+
+  <div class="factor-table">
+    <div class="factor-row">
+      <div class="factor-key">v<sup>A</sup><sub>t</sub> − v<sup>B</sup><sub>t</sub></div>
+      <div class="factor-desc">The difference between the two velocity fields at point x and time t. Zero when both methods agree on how trajectories flow there; large when they diverge.</div>
+    </div>
+    <div class="factor-row">
+      <div class="factor-key">‖ · ‖²<sub>C<sup>½</sup>H</sub></div>
+      <div class="factor-desc">Squared norm in the Cameron–Martin space — this is where Assumption 2 enters. It weights disagreements by the geometry of the reference noise covariance.</div>
+    </div>
+    <div class="factor-row">
+      <div class="factor-key">t / (1−t)</div>
+      <div class="factor-desc">A time weight that upweights discrepancies near t = 1, where trajectory distributions have had the most time to diverge. It blows up at t = 1, which is why importance sampling is used in practice.</div>
+    </div>
+    <div class="factor-row">
+      <div class="factor-key">dμ<sup>A</sup><sub>t</sub> dt</div>
+      <div class="factor-desc">We integrate over trajectories drawn from method A's interpolation path at each time t. The estimator is computed entirely from samples of ν<sup>A</sup> — no samples from ν<sup>B</sup> needed at evaluation time.</div>
+    </div>
+  </div>
+
+  <div class="callout">
+    <strong>Why this is powerful:</strong> the KL divergence between two
+    infinite-dimensional trajectory distributions reduces to the expected squared
+    difference of two functions. No density estimation, no ODE simulation —
+    just two neural-network forward passes per sample.
+  </div>
+
+  <hr class="divider" />
+
+  <!-- ── SECTION 5 — estimation ── -->
+  <h2>Estimation in three steps</h2>
+
+  <div style="margin-top:1rem;">
+    <div class="step-row">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <h4>Train two velocity networks</h4>
+        <p>One network \(v^A_\theta\) on samples from method A, one \(v^B_\theta\)
+        on method B. Both use a <strong>Fourier Neural Operator</strong> architecture
+        so they operate on functions directly, resolution-independently.</p>
+      </div>
+    </div>
+    <div class="step-row">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <h4>Sample interpolated trajectories</h4>
+        <p>Draw \(x_1 \sim \nu^A\), \(x_0 \sim \mathcal{N}(0,C)\), \(t \sim \mathrm{Uniform}[0,1]\).
+        Form \(x_t = t x_1 + (1-t) x_0\). This gives a point on the interpolation
+        path at time \(t\), distributed as \(\mu^A_t\).</p>
+      </div>
+    </div>
+    <div class="step-row">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <h4>Average the integrand</h4>
+        <p>Evaluate \(\tfrac{t}{1-t}\|v^A_\theta(x_t) - v^B_\theta(x_t)\|^2\)
+        and average over many samples. No ODE integration required —
+        just forward passes through the two trained networks.</p>
+      </div>
+    </div>
+  </div>
+
+  <div style="margin-top:2.5rem; display:flex; gap:12px; flex-wrap:wrap;">
+    <a href="index.html" style="
+      display:inline-block; font-size:14px; font-weight:500;
+      color:var(--text2); border:0.5px solid var(--border2);
+      padding:8px 20px; border-radius:6px; text-decoration:none;">
+      ← Motivation
+    </a>
+    <a href="results.html" style="
+      display:inline-block; font-size:14px; font-weight:500;
+      color:var(--accent); border:0.5px solid var(--accent);
+      padding:8px 20px; border-radius:6px; text-decoration:none;">
+      Results →
+    </a>
+  </div>
+
+</div>
+
+<footer>
+  Based on <em>Relative Entropy Estimation in Function Space</em> · Anonymous Authors · ICML submission
+</footer>
+
+<script>
+(function () {
+  const cv  = document.getElementById('vel-cv');
+  const ctx = cv.getContext('2d');
+  const slider  = document.getElementById('t-slider');
+  const tValEl  = document.getElementById('t-val');
+  const togA = document.getElementById('tog-A');
+  const togB = document.getElementById('tog-B');
+
+  const dark = () => window.matchMedia('(prefers-color-scheme:dark)').matches;
+  const bgc  = () => dark() ? '#1e1d1b' : '#f7f6f3';
+  const tc   = () => dark() ? 'rgba(255,255,255,0.38)' : 'rgba(0,0,0,0.32)';
+  const tc2  = () => dark() ? 'rgba(255,255,255,0.10)' : 'rgba(0,0,0,0.07)';
+
+  let showA = true, showB = true;
+
+  function setup() {
+    const W = cv.parentElement.clientWidth;
+    cv.width = W; cv.height = 200; cv.style.height = '200px';
+  }
+
+  function arrow(x, y, dx, dy, col, alpha) {
+    const len = Math.sqrt(dx*dx + dy*dy);
+    if (len < 1) return;
+    const nx = dx/len, ny = dy/len;
+    const ex = x+dx, ey = y+dy;
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.strokeStyle = col;
+    ctx.lineWidth = 1.8;
+    ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(ex, ey); ctx.stroke();
+    const hs = 5;
+    ctx.beginPath();
+    ctx.moveTo(ex, ey);
+    ctx.lineTo(ex - hs*nx + hs*0.4*ny, ey - hs*ny - hs*0.4*nx);
+    ctx.lineTo(ex - hs*nx - hs*0.4*ny, ey - hs*ny + hs*0.4*nx);
+    ctx.closePath();
+    ctx.fillStyle = col; ctx.fill();
+    ctx.restore();
+  }
+
+  function draw() {
+    const W = cv.width, H = cv.height;
+    const t = slider.value / 100;
+    tValEl.textContent = t.toFixed(2);
+
+    ctx.clearRect(0, 0, W, H);
+    ctx.fillStyle = bgc(); ctx.fillRect(0, 0, W, H);
+
+    const PAD = 36, cols = 8, rows = 3;
+    const gw = (W - 2*PAD) / (cols-1);
+    const gh = (H - 40) / (rows-1);
+
+    /* grid lines */
+    ctx.strokeStyle = tc2(); ctx.lineWidth = 0.5;
+    for (let c = 0; c < cols; c++) {
+      const x = PAD + c*gw;
+      ctx.beginPath(); ctx.moveTo(x, 18); ctx.lineTo(x, H-22); ctx.stroke();
+    }
+
+    /* velocity fields */
+    for (let c = 0; c < cols; c++) {
+      for (let r = 0; r < rows; r++) {
+        const x = PAD + c*gw;
+        const y = 18 + r*gh;
+        const ct = c/(cols-1);
+
+        /* method A: smooth drift, small oscillation that diminishes with t */
+        const ayA = (-16 + 8*Math.sin(r*0.9)) * (1 - 0.5*t);
+        const axA = 13 * (0.8 + 0.2*t);
+        if (showA) arrow(x, y, axA, ayA, '#7F77DD', 0.82);
+
+        /* method B: oscillatory drift that grows then fades */
+        const osc = Math.sin(ct*Math.PI*3 + r*1.1 + t*Math.PI*2);
+        const ayB = osc * 22 * Math.sin(t*Math.PI);
+        const axB = 13 * (0.7 + 0.3*Math.cos(r*0.5));
+        if (showB) arrow(x, y, axB, ayB, '#EF9F27', 0.82);
+      }
+    }
+
+    /* time axis */
+    ctx.font = '11px -apple-system,sans-serif';
+    ctx.fillStyle = tc();
+    ctx.textAlign = 'left';  ctx.fillText('t = 0', PAD, H-5);
+    ctx.textAlign = 'center';ctx.fillText('time →', W/2, H-5);
+    ctx.textAlign = 'right'; ctx.fillText('t = 1', W-PAD, H-5);
+
+    /* current-time indicator */
+    const tx = PAD + t*(W-2*PAD);
+    ctx.save();
+    ctx.strokeStyle = dark() ? 'rgba(255,255,255,0.20)' : 'rgba(0,0,0,0.14)';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([3,4]);
+    ctx.beginPath(); ctx.moveTo(tx, 14); ctx.lineTo(tx, H-18); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.restore();
+  }
+
+  slider.addEventListener('input', draw);
+
+  togA.addEventListener('click', function() {
+    showA = !showA;
+    this.classList.toggle('on', showA);
+    draw();
+  });
+  togB.addEventListener('click', function() {
+    showB = !showB;
+    this.classList.toggle('on', showB);
+    draw();
+  });
+
+  window.addEventListener('resize', () => { setup(); draw(); });
+  window.matchMedia('(prefers-color-scheme:dark)').addEventListener('change', draw);
+
+  setup(); draw();
+})();
+</script>
+
+</body>
+</html>
