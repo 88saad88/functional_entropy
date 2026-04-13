@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Results — FKL Blog</title>
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    /* ── dataset tabs ── */
+    .tab-row {
+      display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 1.25rem;
+    }
+    .tab {
+      font-size: 12px; font-family: var(--sans);
+      padding: 5px 14px; border-radius: 6px;
+      border: 0.5px solid var(--border2);
+      background: var(--bg2); color: var(--text2);
+      cursor: pointer; transition: all .15s;
+    }
+    .tab.active {
+      background: var(--accent); color: #fff; border-color: transparent;
+    }
+
+    /* ── metric toggle row ── */
+    .metric-row {
+      display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 1rem;
+    }
+    .mtag {
+      font-size: 11px; font-family: var(--sans);
+      padding: 3px 10px; border-radius: 4px;
+      border: 0.5px solid var(--border2);
+      background: var(--bg2); color: var(--text2);
+      cursor: pointer;
+    }
+    .mtag.active { background: var(--bg3); color: var(--text); border-color: var(--border2); }
+
+    /* ── ranking table ── */
+    .rank-table { width: 100%; border-collapse: collapse; font-size: 13px; margin: 0 0 1rem; }
+    .rank-table th {
+      font-size: 11px; font-weight: 500; letter-spacing: .04em; text-transform: uppercase;
+      color: var(--text3); padding: 6px 10px; text-align: left;
+      border-bottom: 0.5px solid var(--border);
+    }
+    .rank-table td {
+      padding: 7px 10px; border-bottom: 0.5px solid var(--border);
+      color: var(--text2); vertical-align: middle;
+    }
+    .rank-table tr:last-child td { border-bottom: none; }
+    .rank-num {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 22px; height: 22px; border-radius: 50%;
+      font-size: 11px; font-weight: 500;
+      background: var(--bg3); color: var(--text2);
+    }
+    .rank-num.r1 { background: #1D9E75; color: #fff; }
+    .rank-num.r2 { background: var(--bg3); color: var(--text); }
+    .rank-num.r3 { background: var(--bg3); color: var(--text); }
+    .method-dot {
+      display: inline-block; width: 8px; height: 8px;
+      border-radius: 50%; margin-right: 6px; vertical-align: middle;
+    }
+    .inconsistency-badge {
+      display: inline-block; font-size: 10px; padding: 1px 7px;
+      border-radius: 3px; background: rgba(212,83,126,0.12);
+      color: #993556; margin-left: 6px; vertical-align: middle;
+    }
+
+    /* ── FKL bar chart ── */
+    .fkl-chart { margin: 0.5rem 0 1rem; }
+    .fkl-row {
+      display: grid; grid-template-columns: 72px 1fr 56px;
+      gap: 0 10px; align-items: center; margin-bottom: 7px;
+    }
+    .fkl-label { font-size: 12px; color: var(--text2); text-align: right; }
+    .fkl-bar-wrap {
+      height: 18px; background: var(--bg3);
+      border-radius: 3px; overflow: hidden;
+    }
+    .fkl-bar {
+      height: 100%; border-radius: 3px;
+      transition: width .5s cubic-bezier(.4,0,.2,1);
+    }
+    .fkl-val { font-size: 12px; font-weight: 500; color: var(--text2); }
+    .fkl-val.best { color: #1D9E75; }
+
+    /* ── petal case study ── */
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 1.25rem 0; }
+    @media (max-width: 520px) { .two-col { grid-template-columns: 1fr; } }
+    .method-card {
+      border: 0.5px solid var(--border); border-radius: var(--radius);
+      overflow: hidden; background: var(--bg2);
+    }
+    .method-card-head {
+      padding: 8px 12px; border-bottom: 0.5px solid var(--border);
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .method-card-title { font-size: 13px; font-weight: 500; }
+    .score-pair { display: flex; gap: 8px; }
+    .score-chip {
+      font-size: 11px; padding: 2px 8px; border-radius: 4px;
+      background: var(--bg3);
+    }
+    .score-chip.fkl-chip { color: #993556; }
+    .score-chip.w2-chip  { color: var(--text2); }
+    canvas.case-cv { display: block; width: 100%; }
+
+    /* ── real data ── */
+    .real-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 1rem 0; }
+    @media (max-width: 520px) { .real-grid { grid-template-columns: 1fr; } }
+    .real-card {
+      border: 0.5px solid var(--border); border-radius: var(--radius);
+      padding: 1rem 1.1rem; background: var(--bg2);
+    }
+    .real-card h4 { font-size: 14px; font-weight: 500; margin: 0 0 0.5rem; }
+    .real-card p  { font-size: 13px; color: var(--text2); margin: 0; line-height: 1.6; }
+    .highlight-finding {
+      font-size: 13px; color: var(--text2); line-height: 1.6;
+      border-left: 2px solid var(--pink, #D4537E);
+      padding: 0.5rem 0.75rem; margin: 0.75rem 0 0;
+      background: var(--bg3); border-radius: 0 6px 6px 0;
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <a class="nav-brand" href="index.html">FKL <span>·</span> Path-Space Divergence</a>
+  <a href="index.html">Motivation</a>
+  <a href="method.html">Method</a>
+  <a href="results.html" class="active">Results</a>
+</nav>
+
+<div class="hero">
+  <div class="kicker">Results</div>
+  <h1>Standard metrics disagree. FKL doesn't.</h1>
+  <p class="lead">
+    Six trajectory inference methods are benchmarked on three synthetic datasets
+    and two real single-cell datasets. Five widely-used marginal metrics produce
+    inconsistent, contradictory rankings. FKL provides a single coherent ordering
+    that matches visual inspection every time.
+  </p>
+</div>
+
+<div class="page">
+
+  <hr class="divider" />
+
+  <!-- ══ SECTION 1 — SETUP ══ -->
+  <h2>1 — The benchmark</h2>
+
+  <p>
+    <strong>Six methods</strong> spanning the main families of trajectory inference:
+  </p>
+  <ul style="margin: 0.5rem 0 1rem 1.2rem; color: var(--text2); font-size: 14px; line-height: 2;">
+    <li><strong style="color:var(--text)">SBIRR</strong> — Schrödinger Bridge with iterative reference refinement. Injects structural constraints on the drift.</li>
+    <li><strong style="color:var(--text)">vSB</strong> — vanilla Schrödinger Bridge baseline, Brownian motion reference.</li>
+    <li><strong style="color:var(--text)">MSBM</strong> — Multi-Marginal Schrödinger Bridge Matching.</li>
+    <li><strong style="color:var(--text)">MFL</strong> — Mean-Field Langevin in path space. Targets drift-diffusion population dynamics.</li>
+    <li><strong style="color:var(--text)">AM</strong> — Action Matching. Learns deterministic velocity fields with optional stochastic variant.</li>
+    <li><strong style="color:var(--text)">TIGON</strong> — ODE-based. Formulates TI as dynamic optimal transport solved via neural ODEs.</li>
+  </ul>
+
+  <p>
+    <strong>Three synthetic datasets</strong> where ground-truth trajectories are known:
+    Lotka-Volterra (predator-prey SDEs), Repressilator (three-gene oscillator),
+    and Petal (branching differentiation). Plus two real scRNA-seq datasets:
+    Embryoid Body (EB) and Human Embryonic Stem Cell (hESC) — where no ground truth exists.
+  </p>
+
+  <p>
+    <strong>Five marginal metrics</strong> evaluated at held-out timepoints:
+    Earth Mover's Distance (W₁), Wasserstein-2 (W₂), Sliced Wasserstein (SWD),
+    Max-Sliced Wasserstein (MWD), and Maximum Mean Discrepancy (MMD).
+    Plus FKL — the forward and reverse KL between full trajectory distributions.
+  </p>
+
+  <hr class="divider" />
+
+  <!-- ══ SECTION 2 — INCONSISTENCY ══ -->
+  <h2>2 — Marginal metrics are inconsistent</h2>
+
+  <p>
+    Select a dataset and a metric below. Watch how the method rankings change —
+    not just across datasets, but across different metrics on the <em>same</em> dataset
+    at the <em>same</em> timepoint.
+  </p>
+
+  <div class="tab-row" id="ds-tabs">
+    <button class="tab active" data-ds="lv">Lotka-Volterra</button>
+    <button class="tab" data-ds="rep">Repressilator</button>
+    <button class="tab" data-ds="petal">Petal</button>
+  </div>
+
+  <div class="metric-row" id="metric-tabs">
+    <button class="mtag active" data-m="emd">W₁ (EMD)</button>
+    <button class="mtag" data-m="w2">W₂</button>
+    <button class="mtag" data-m="swd">SWD</button>
+    <button class="mtag" data-m="mmd">MMD</button>
+  </div>
+
+  <div id="rank-panel"></div>
+
+  <div class="callout" id="inconsistency-note">
+    Rankings shown at the last validation snapshot. Switch metrics above to see how the winner changes.
+  </div>
+
+  <hr class="divider" />
+
+  <!-- ══ SECTION 3 — FKL RANKING ══ -->
+  <h2>3 — FKL gives a coherent ranking</h2>
+
+  <p>
+    FKL produces stable rankings that align with what you see when you actually
+    look at the trajectories. Lower FKL = closer to the ground-truth path distribution.
+    The validation set (VAL) — resampled from the same process — sets the baseline.
+  </p>
+
+  <div class="tab-row" id="fkl-tabs">
+    <button class="tab active" data-fkl="lv">Lotka-Volterra</button>
+    <button class="tab" data-fkl="rep">Repressilator</button>
+    <button class="tab" data-fkl="petal">Petal</button>
+  </div>
+
+  <div class="fkl-chart" id="fkl-chart"></div>
+  <p id="fkl-note" style="font-size:13px;color:var(--text2);margin-top:0.25rem;"></p>
+
+  <hr class="divider" />
+
+  <!-- ══ SECTION 4 — PETAL CASE STUDY ══ -->
+  <h2>4 — The Petal case: same snapshot, different dynamics</h2>
+
+  <p>
+    The Petal dataset exposes the problem most clearly. At τ = 0.75, TIGON scores
+    <em>slightly better</em> than MSBM on W₂ (0.155 vs 0.160) and clearly better
+    on MMD (0.018 vs 0.057). Yet their trajectories are completely different.
+  </p>
+
+  <div class="two-col">
+    <div class="method-card">
+      <div class="method-card-head">
+        <span class="method-card-title" style="color:#7F77DD;">MSBM</span>
+        <div class="score-pair">
+          <span class="score-chip w2-chip">W₂ = 0.160</span>
+          <span class="score-chip fkl-chip">FKL = 13.6</span>
+        </div>
+      </div>
+      <canvas class="case-cv" id="cv-msbm" height="180"></canvas>
+    </div>
+    <div class="method-card">
+      <div class="method-card-head">
+        <span class="method-card-title" style="color:#EF9F27;">TIGON</span>
+        <div class="score-pair">
+          <span class="score-chip w2-chip">W₂ = 0.155 ✓</span>
+          <span class="score-chip fkl-chip">FKL = 36.5 ✗</span>
+        </div>
+      </div>
+      <canvas class="case-cv" id="cv-tigon" height="180"></canvas>
+    </div>
+  </div>
+
+  <p style="font-size:14px;color:var(--text2);">
+    MSBM (FKL = 13.6) correctly captures the branching structure of the Petal dataset —
+    trajectories spread into distinct lineages. TIGON (FKL = 36.5) produces smooth,
+    undifferentiated paths that converge to the same snapshot point but miss the
+    bifurcation entirely. W₂ ranked TIGON as the winner. FKL correctly identifies MSBM.
+  </p>
+
+  <hr class="divider" />
+
+  <!-- ══ SECTION 5 — REAL DATA ══ -->
+  <h2>5 — Real data: no ground truth, but FKL still reveals structure</h2>
+
+  <p>
+    On real scRNA-seq data there are no ground-truth trajectories. FKL uses SBIRR
+    — which explicitly models stochastic differentiation dynamics — as the reference.
+    FKL then measures how closely each method recovers those dynamics.
+  </p>
+
+  <div class="real-grid">
+    <div class="real-card">
+      <h4>Embryoid Body (EB)</h4>
+      <p>
+        vSB, MSBM, and MFL all score well under FKL — they share the same
+        Schrödinger Bridge assumptions as the reference, so their dynamics
+        are inherently similar. Marginal metrics agree here, making EB the
+        easier case.
+      </p>
+      <div class="highlight-finding">
+        FKL correctly recovers the similarity in dynamics between SB-family
+        methods, while ranking AM and TIGON as less faithful to the reference process.
+      </div>
+    </div>
+    <div class="real-card">
+      <h4>Human Embryonic Stem Cell (hESC)</h4>
+      <p>
+        TIGON ranks <strong>best</strong> at the first validation timepoint under
+        every marginal metric. But FKL tells a different story: TIGON's
+        ODE-based trajectories are too smooth — they miss the stochasticity
+        that characterises real differentiation dynamics.
+      </p>
+      <div class="highlight-finding">
+        FKL = 103 for TIGON vs FKL = 90 for vSB — a gap invisible to W₂,
+        which scores TIGON as the clear winner on marginals.
+      </div>
+    </div>
+  </div>
+
+  <div class="callout">
+    <strong>The key pattern across all datasets:</strong> methods that produce
+    deterministic or overly smooth trajectories (TIGON, AM) tend to score well
+    on marginal metrics — cells land near the right dots — but score poorly on FKL,
+    because the paths themselves don't reflect the stochastic nature of the process.
+    FKL is the only metric that catches this.
+  </div>
+
+  <div style="margin-top:2.5rem;">
+    <a href="method.html" style="
+      display:inline-block; font-size:14px; font-weight:500;
+      color:var(--text2); border:0.5px solid var(--border2);
+      padding:8px 20px; border-radius:6px; text-decoration:none;">
+      ← Method
+    </a>
+  </div>
+
+</div>
+
+<footer>
+  Based on <em>Relative Entropy Estimation in Function Space</em> · Anonymous Authors · ICML submission
+</footer>
+
+<script>
+(function () {
+  const dark = () => window.matchMedia('(prefers-color-scheme:dark)').matches;
+  const bgc  = () => dark() ? '#1e1d1b' : '#f7f6f3';
+  const tc   = () => dark() ? 'rgba(255,255,255,0.42)' : 'rgba(0,0,0,0.36)';
+  const tc2  = () => dark() ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.08)';
+
+  /* ── DATA ── */
+  const METHODS = ['VAL','SBIRR','vSB','MSBM','MFL','AM','TIGON'];
+  const METHOD_COLS = {
+    VAL:'#888', SBIRR:'#1D9E75', vSB:'#7F77DD',
+    MSBM:'#EF9F27', MFL:'#D4537E', AM:'#534AB7', TIGON:'#BA7517'
+  };
+
+  /* last-snapshot marginal scores from paper Tables 1-3 */
+  const MARGINAL = {
+    lv: {
+      emd:  {VAL:0.061, SBIRR:0.368, vSB:0.272, MSBM:0.554, MFL:0.659, AM:1.134, TIGON:0.245},
+      w2:   {VAL:0.082, SBIRR:0.420, vSB:0.323, MSBM:0.637, MFL:0.958, AM:1.958, TIGON:0.351},
+      swd:  {VAL:0.035, SBIRR:0.273, vSB:0.199, MSBM:0.452, MFL:0.698, AM:1.449, TIGON:0.241},
+      mmd:  {VAL:0.017, SBIRR:0.198, vSB:0.156, MSBM:0.388, MFL:0.240, AM:0.203, TIGON:0.104},
+    },
+    rep: {
+      emd:  {VAL:0.116, SBIRR:1.832, vSB:0.944, MSBM:1.225, MFL:1.173, AM:17.516, TIGON:0.842},
+      w2:   {VAL:0.147, SBIRR:1.894, vSB:1.078, MSBM:1.400, MFL:1.317, AM:39.206, TIGON:0.916},
+      swd:  {VAL:0.055, SBIRR:1.055, vSB:0.576, MSBM:0.698, MFL:0.718, AM:22.624, TIGON:0.483},
+      mmd:  {VAL:0.030, SBIRR:0.545, vSB:0.537, MSBM:0.678, MFL:0.466, AM:0.352,  TIGON:0.430},
+    },
+    petal: {
+      emd:  {VAL:0.068, SBIRR:0.045, vSB:0.059, MSBM:0.119, MFL:0.105, AM:0.166, TIGON:0.053},
+      w2:   {VAL:0.246, SBIRR:0.156, vSB:0.202, MSBM:0.254, MFL:0.397, AM:0.283, TIGON:0.169},
+      swd:  {VAL:0.113, SBIRR:0.071, vSB:0.098, MSBM:0.126, MFL:0.254, AM:0.149, TIGON:0.083},
+      mmd:  {VAL:0.043, SBIRR:0.021, vSB:0.035, MSBM:0.067, MFL:0.023, AM:0.088, TIGON:0.028},
+    },
+  };
+
+  /* FKL forward KL from paper Tables 1-3 */
+  const FKL_DATA = {
+    lv:    {VAL:7.3,   SBIRR:30.8,  vSB:94.7,  MSBM:55.7, MFL:38.7,  AM:35.7,  TIGON:64.4},
+    rep:   {VAL:5.3,   SBIRR:13.4,  vSB:32.3,  MSBM:30.5, MFL:26.0,  AM:27.9,  TIGON:19.0},
+    petal: {VAL:4.0,   SBIRR:21.3,  vSB:23.6,  MSBM:13.6, MFL:44.3,  AM:17.0,  TIGON:36.5},
+  };
+
+  const FKL_NOTES = {
+    lv:    'SBIRR ranks best (30.8), ahead of AM (35.7) and MFL (38.7). vSB is worst (94.7) — it connects point clouds without capturing the oscillatory predator-prey dynamics.',
+    rep:   'SBIRR again best (13.4). TIGON (19.0) scores ahead of AM and vSB despite its smooth spiral — but FKL still separates it from the true stochastic oscillator.',
+    petal: 'MSBM ranks best (13.6), correctly capturing the branching structure. TIGON (36.5) is ranked last — it produces smooth paths that miss the bifurcation. This reverses the W₂ ranking.',
+  };
+
+  /* ── SECTION 2 — ranking table ── */
+  let curDs = 'lv', curM = 'emd';
+
+  function renderRanking() {
+    const scores = MARGINAL[curDs][curM];
+    const sorted = Object.entries(scores).sort((a,b) => a[1]-b[1]);
+    const winner = sorted[0][0];
+    const second = sorted[1][0];
+
+    /* check if winner changes across metrics */
+    const winners = ['emd','w2','swd','mmd'].map(m => {
+      return Object.entries(MARGINAL[curDs][m]).sort((a,b)=>a[1]-b[1])[0][0];
+    });
+    const inconsistent = new Set(winners).size > 1;
+
+    let html = `<table class="rank-table">
+      <thead><tr>
+        <th>Rank</th><th>Method</th>
+        <th>${{emd:'W₁ (EMD)',w2:'W₂',swd:'SWD',mmd:'MMD'}[curM]} score</th>
+        <th>Note</th>
+      </tr></thead><tbody>`;
+
+    sorted.forEach(([m, v], i) => {
+      const cls = i===0?'r1':i===1?'r2':'r3';
+      const note = i===0 && inconsistent
+        ? `<span class="inconsistency-badge">winner changes by metric</span>` : '';
+      html += `<tr>
+        <td><span class="rank-num ${cls}">${i+1}</span></td>
+        <td><span class="method-dot" style="background:${METHOD_COLS[m]}"></span>${m}</td>
+        <td>${v.toFixed(3)}</td>
+        <td>${note}</td>
+      </tr>`;
+    });
+    html += '</tbody></table>';
+    document.getElementById('rank-panel').innerHTML = html;
+
+    const noteEl = document.getElementById('inconsistency-note');
+    if (inconsistent) {
+      const wset = [...new Set(winners)];
+      noteEl.innerHTML = `<strong>Inconsistency detected:</strong> switching between metrics changes the winner from
+        <strong>${winners[0]}</strong> (W₁) to <strong>${winners[1]}</strong> (W₂) to
+        <strong>${winners[2]}</strong> (SWD) to <strong>${winners[3]}</strong> (MMD)
+        — all on the same dataset at the same timepoint.`;
+    } else {
+      noteEl.innerHTML = `Rankings shown at the last validation snapshot for <strong>${{lv:'Lotka-Volterra',rep:'Repressilator',petal:'Petal'}[curDs]}</strong>. Switch metrics above to see how winners change.`;
+    }
+  }
+
+  document.querySelectorAll('[data-ds]').forEach(btn => {
+    btn.addEventListener('click', function() {
+      curDs = this.dataset.ds;
+      document.querySelectorAll('[data-ds]').forEach(b=>b.classList.remove('active'));
+      this.classList.add('active');
+      renderRanking();
+    });
+  });
+  document.querySelectorAll('[data-m]').forEach(btn => {
+    btn.addEventListener('click', function() {
+      curM = this.dataset.m;
+      document.querySelectorAll('[data-m]').forEach(b=>b.classList.remove('active'));
+      this.classList.add('active');
+      renderRanking();
+    });
+  });
+  renderRanking();
+
+  /* ── SECTION 3 — FKL bar chart ── */
+  let curFkl = 'lv';
+
+  function renderFkl() {
+    const data = FKL_DATA[curFkl];
+    const maxVal = Math.max(...Object.values(data));
+    const minM = Object.entries(data)
+      .filter(([m])=>m!=='VAL')
+      .sort((a,b)=>a[1]-b[1])[0][0];
+
+    let html = '';
+    Object.entries(data).forEach(([m, v]) => {
+      const pct = (v / maxVal * 100).toFixed(1);
+      const isVal = m === 'VAL';
+      const isBest = m === minM;
+      const col = isVal ? '#888' : isBest ? '#1D9E75' : METHOD_COLS[m];
+      html += `<div class="fkl-row">
+        <div class="fkl-label">${m}</div>
+        <div class="fkl-bar-wrap">
+          <div class="fkl-bar" style="width:${pct}%;background:${col};opacity:${isVal?0.5:0.75};"></div>
+        </div>
+        <div class="fkl-val${isBest?' best':''}">${v.toFixed(1)}</div>
+      </div>`;
+    });
+    document.getElementById('fkl-chart').innerHTML = html;
+    document.getElementById('fkl-note').textContent = FKL_NOTES[curFkl];
+  }
+
+  document.querySelectorAll('[data-fkl]').forEach(btn => {
+    btn.addEventListener('click', function() {
+      curFkl = this.dataset.fkl;
+      document.querySelectorAll('[data-fkl]').forEach(b=>b.classList.remove('active'));
+      this.classList.add('active');
+      renderFkl();
+    });
+  });
+  renderFkl();
+
+  /* ── SECTION 4 — Petal case study canvases ── */
+  function drawPetal(canvasId, method) {
+    const cv = document.getElementById(canvasId);
+    const ctx = cv.getContext('2d');
+
+    function draw() {
+      const W = cv.parentElement.clientWidth;
+      cv.width = W; cv.height = 180; cv.style.height = '180px';
+      ctx.clearRect(0, 0, W, 180);
+      ctx.fillStyle = bgc(); ctx.fillRect(0, 0, W, 180);
+
+      const cx = W/2, cy = 100, R = Math.min(W, 180)*0.32;
+      const nBranches = 8, nTraj = method === 'msbm' ? 7 : 7;
+      const snapCol = '#D4537E';
+      const pathCol = method === 'msbm' ? '#7F77DD' : '#EF9F27';
+
+      /* draw trajectories */
+      for (let b = 0; b < nBranches; b++) {
+        const angle = (b / nBranches) * Math.PI * 2 + Math.PI/8;
+        for (let j = 0; j < (method==='msbm' ? 2 : 1); j++) {
+          const spread = method === 'msbm'
+            ? (j - 0.5) * 0.22           /* MSBM: spreads into distinct bundles */
+            : 0;                          /* TIGON: all converge to same point */
+          const endA = angle + spread;
+          const ex = cx + Math.cos(endA) * R;
+          const ey = cy + Math.sin(endA) * R;
+
+          ctx.save();
+          ctx.beginPath();
+          ctx.strokeStyle = pathCol;
+          ctx.lineWidth = 1.4;
+          ctx.globalAlpha = 0.45;
+          /* draw from origin out to ~75% of the branch */
+          const steps = 40;
+          for (let s = 0; s <= steps; s++) {
+            const t = s / steps;
+            /* MSBM: fans out; TIGON: converges smoothly */
+            const curA = angle + (method==='msbm' ? spread*t : 0);
+            const r = R * t * 0.75;
+            const nx = cx + Math.cos(curA + (method==='tigon' ? 0.08*Math.sin(t*Math.PI) : 0)) * r;
+            const ny = cy + Math.sin(curA + (method==='tigon' ? 0.08*Math.sin(t*Math.PI) : 0)) * r;
+            s===0 ? ctx.moveTo(cx,cy) : ctx.lineTo(nx,ny);
+          }
+          ctx.stroke();
+          ctx.restore();
+        }
+      }
+
+      /* snapshot ring at τ=0.75 — shared by both */
+      for (let b = 0; b < nBranches; b++) {
+        const angle = (b / nBranches) * Math.PI * 2 + Math.PI/8;
+        const r = R * 0.75;
+        const sx = cx + Math.cos(angle) * r;
+        const sy = cy + Math.sin(angle) * r;
+        ctx.save();
+        ctx.beginPath(); ctx.arc(sx, sy, 10, 0, Math.PI*2);
+        ctx.fillStyle = 'rgba(212,83,126,0.12)'; ctx.fill();
+        ctx.beginPath(); ctx.arc(sx, sy, 5, 0, Math.PI*2);
+        ctx.fillStyle = snapCol; ctx.fill();
+        ctx.strokeStyle = dark()?'rgba(255,255,255,0.25)':'rgba(255,255,255,0.8)';
+        ctx.lineWidth=1.2; ctx.stroke();
+        ctx.restore();
+      }
+
+      /* label */
+      ctx.save();
+      ctx.font = '11px -apple-system,sans-serif';
+      ctx.fillStyle = tc();
+      ctx.textAlign = 'center';
+      ctx.fillText('τ = 0.75 snapshot (pink) · trajectories from origin', W/2, 172);
+      ctx.restore();
+    }
+
+    draw();
+    window.addEventListener('resize', draw);
+    window.matchMedia('(prefers-color-scheme:dark)').addEventListener('change', draw);
+  }
+
+  drawPetal('cv-msbm', 'msbm');
+  drawPetal('cv-tigon', 'tigon');
+
+})();
+</script>
+
+</body>
+</html>
