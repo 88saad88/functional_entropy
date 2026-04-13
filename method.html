@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>How FKL Works — FKL Blog</title>
+  <title>How FKL Works  FKL Blog</title>
   <link rel="stylesheet" href="style.css" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-chtml.min.js"></script>
   <style>
@@ -134,7 +134,7 @@
   <h1>Comparing distributions over trajectories</h1>
   <p class="lead">
     FKL measures the KL divergence between two probability measures over
-    <em>function space</em> — the full space of possible trajectories.
+    <em>function space</em>  the full space of possible trajectories.
     Here's the idea, the two conditions required, and the formula that makes it computable.
   </p>
 </div>
@@ -147,7 +147,7 @@
   <h2>The object we want to measure</h2>
 
   <p>
-    A trajectory inference method doesn't output a single path — it outputs a
+    A trajectory inference method doesn't output a single path  it outputs a
     <strong>distribution over paths</strong>. Call it \(\nu\). Two methods give
     us \(\nu^A\) and \(\nu^B\). We want one number that captures how different
     these two distributions are, across the entire space of possible trajectories.
@@ -185,7 +185,7 @@
 
   <div class="assumption">
     <div class="assumption-tag">Assumption 1</div>
-    <h3>Absolute continuity — \(\nu^A \ll \nu^B\)</h3>
+    <h3>Absolute continuity  \(\nu^A \ll \nu^B\)</h3>
     <p>
       Every set of trajectories that is impossible under \(\nu^B\) must also be
       impossible under \(\nu^A\). If \(\nu^A\) places mass somewhere \(\nu^B\)
@@ -199,10 +199,10 @@
 
   <div class="assumption">
     <div class="assumption-tag">Assumption 2</div>
-    <h3>Cameron–Martin support — trajectories must be smooth enough</h3>
+    <h3>Cameron–Martin support  trajectories must be smooth enough</h3>
     <p>
       In infinite dimensions, two Gaussian measures are almost always
-      <em>mutually singular</em> — they live on completely disjoint sets, making
+      <em>mutually singular</em>  they live on completely disjoint sets, making
       any density ratio undefined. The only exception is when their means differ
       by a vector in the <strong>Cameron–Martin space</strong> \(H_C\):
       the subspace of functions reachable by the covariance operator \(C\).
@@ -211,7 +211,7 @@
       Requiring both \(\nu^A\) and \(\nu^B\) to be supported on \(H_C\) ensures
       they share enough common structure for the density ratio to exist.
       In practice this means using a <strong>smooth reference noise</strong>
-      (Matérn covariance) rather than white noise — which also happens to produce
+      (Matérn covariance) rather than white noise  which also happens to produce
       more realistic trajectory priors.
     </p>
   </div>
@@ -219,7 +219,7 @@
   <div class="callout">
     Together these two conditions guarantee the KL is finite and the density ratio
     exists. They also unlock the Cameron–Martin theorem, which gives an explicit
-    formula for how density ratios shift when you move in function space — and
+    formula for how density ratios shift when you move in function space  and
     that formula is what leads to the tractable estimator below.
   </div>
 
@@ -229,14 +229,14 @@
   <h2>From density ratios to velocity fields</h2>
 
   <p>
-    Rather than estimating the density ratio directly — which is hard — FKL
+    Rather than estimating the density ratio directly  which is hard  FKL
     re-expresses the KL in terms of <strong>velocity fields</strong>.
   </p>
   <p>
     The idea: for each method, build a continuous flow that transports a
     reference Gaussian \(\mu_0 = \mathcal{N}(0, C)\) toward the method's
     trajectory distribution \(\nu\). This flow is parameterised by a
-    velocity field \(v_t(x)\) — a function that, at each time \(t\) and
+    velocity field \(v_t(x)\)  a function that, at each time \(t\) and
     location \(x\) in function space, says which direction the distribution
     is moving. The velocity field is learned by a neural network.
   </p>
@@ -244,7 +244,7 @@
     The simulation below lets you see what this looks like. Each arrow shows
     the velocity at a grid point. Method A (purple) drifts smoothly;
     Method B (amber) oscillates. At the same location \(x\) and time \(t\),
-    the two arrows point in different directions — and that difference is
+    the two arrows point in different directions  and that difference is
     exactly what FKL measures.
   </p>
 
@@ -277,7 +277,7 @@
   </p>
 
   <div class="math-block key">
-    <span class="math-label accent">Functional KL — main result (Eq. 9)</span>
+    <span class="math-label accent">Functional KL  main result (Eq. 9)</span>
     \[
       \mathrm{KL}(\nu^A \| \nu^B)
       \;=\;
@@ -295,7 +295,7 @@
     </div>
     <div class="factor-row">
       <div class="factor-key">‖ · ‖²<sub>C<sup>½</sup>H</sub></div>
-      <div class="factor-desc">Squared norm in the Cameron–Martin space — this is where Assumption 2 enters. It weights disagreements by the geometry of the reference noise covariance.</div>
+      <div class="factor-desc">Squared norm in the Cameron–Martin space  this is where Assumption 2 enters. It weights disagreements by the geometry of the reference noise covariance.</div>
     </div>
     <div class="factor-row">
       <div class="factor-key">t / (1−t)</div>
@@ -303,20 +303,20 @@
     </div>
     <div class="factor-row">
       <div class="factor-key">dμ<sup>A</sup><sub>t</sub> dt</div>
-      <div class="factor-desc">We integrate over trajectories drawn from method A's interpolation path at each time t. The estimator is computed entirely from samples of ν<sup>A</sup> — no samples from ν<sup>B</sup> needed at evaluation time.</div>
+      <div class="factor-desc">We integrate over trajectories drawn from method A's interpolation path at each time t. The estimator is computed entirely from samples of ν<sup>A</sup>  no samples from ν<sup>B</sup> needed at evaluation time.</div>
     </div>
   </div>
 
   <div class="callout">
     <strong>Why this is powerful:</strong> the KL divergence between two
     infinite-dimensional trajectory distributions reduces to the expected squared
-    difference of two functions. No density estimation, no ODE simulation —
+    difference of two functions. No density estimation, no ODE simulation 
     just two neural-network forward passes per sample.
   </div>
 
   <hr class="divider" />
 
-  <!-- ── SECTION 5 — estimation ── -->
+  <!-- ── SECTION 5  estimation ── -->
   <h2>Estimation in three steps</h2>
 
   <div style="margin-top:1rem;">
@@ -343,7 +343,7 @@
       <div class="step-body">
         <h4>Average the integrand</h4>
         <p>Evaluate \(\tfrac{t}{1-t}\|v^A_\theta(x_t) - v^B_\theta(x_t)\|^2\)
-        and average over many samples. No ODE integration required —
+        and average over many samples. No ODE integration required 
         just forward passes through the two trained networks.</p>
       </div>
     </div>
