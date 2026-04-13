@@ -132,11 +132,16 @@ function snapPt(t){ return { x: PAD + t*(W-2*PAD), y: H*spine(t) }; }
 
 const PATHS = [
   { col:'#1D9E75', dash:[], label:'Path 1',
-    fn:(t)=>{ return spine(t) - 0.18*Math.sin(t*Math.PI)*Math.sin(t*Math.PI*2); }},
+    // A standard wave that crosses at every quarter-mark
+    fn:(t)=>{ return spine(t) - 0.14 * Math.sin(t * Math.PI * 4); }},
+  
   { col:'#7F77DD', dash:[], label:'Path 2',
-    fn:(t)=>{ return spine(t) + 0.20*Math.sin(t*Math.PI)*Math.cos(t*Math.PI*1.5+0.8); }},
+    // Modulated by cos(t*PI) to invert the wave halfway through
+    fn:(t)=>{ return spine(t) + 0.17 * Math.sin(t * Math.PI * 4) * Math.cos(t * Math.PI); }},
+  
   { col:'#EF9F27', dash:[6,3], label:'Path 3',
-    fn:(t)=>{ const d=0.25*(t<0.5?Math.sin(t*Math.PI*2):-Math.sin((t-0.5)*Math.PI*2)); return spine(t)+d; }},
+    // Modulated by sin(t*PI) for a wide, sweeping envelope
+    fn:(t)=>{ return spine(t) + 0.22 * Math.sin(t * Math.PI * 4) * Math.sin(t * Math.PI); }},
 ];
 
 function drawPath(p, alpha){
@@ -225,7 +230,11 @@ const SCENES = [
       ctx.clearRect(0,0,W,H); ctx.fillStyle=bgc(); ctx.fillRect(0,0,W,H); drawGrid();
       PATHS.forEach(p=>drawPath(p,0.7)); SNAP_T.forEach(t=>drawSnap(t)); drawSingleCell();
       PATHS.forEach((p,i)=>{
-        const t=0.5, x=PAD+t*(W-2*PAD), y=H*p.fn(t)+[-22,18,-22][i];
+        // Stagger the labels along the x-axis so they don't overlap at the intersection
+        const t = [0.375, 0.625, 0.875][i]; 
+        const x = PAD + t * (W - 2 * PAD);
+        const y = H * p.fn(t) + (p.fn(t) > spine(t) ? 20 : -15); // Push label up or down based on the curve
+        
         ctx.save(); ctx.font='500 11px -apple-system,sans-serif'; ctx.fillStyle=p.col; ctx.textAlign='center'; ctx.fillText(p.label,x,y); ctx.restore();
       });
     }
