@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>FKL — Measuring Trajectory Inference</title>
+  <title>FKL Measuring Trajectory Inference</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
@@ -20,13 +20,13 @@
   <h1>Same snapshots. Completely different stories.</h1>
   <p class="lead">
     In single-cell biology, measuring a cell destroys it. All we ever see are
-    frozen cross-sections — independent samples at a handful of timepoints.
+    frozen cross-sections independent samples at a handful of timepoints.
     The standard way to evaluate trajectory inference methods is to check how
     well they reproduce those snapshots. But that test is blind to something
     fundamental: <em>how the cells actually moved.</em>
   </p>
   <p class="lead">
-    FKL — functional KL divergence — is the first practical metric that
+    FKL functional KL divergence is the first practical metric that
     operates on full trajectory distributions rather than marginals.
   </p>
 </div>
@@ -38,7 +38,7 @@
   <h2>Why current metrics miss the point</h2>
   <p>
     The animation below shows the core problem. Three trajectory methods all
-    reproduce the same five snapshots with nearly identical scores —
+    reproduce the same five snapshots with nearly identical scores
     yet their implied dynamics are completely different.
     Step through it to see why marginal metrics can't tell them apart.
   </p>
@@ -68,7 +68,7 @@
   <div class="callout">
     <strong>The non-identifiability problem.</strong> A set of time-indexed marginals
     can be realised by infinitely many path measures. Matching snapshots well
-    tells you nothing about which of those path measures a method has found —
+    tells you nothing about which of those path measures a method has found
     or whether it found a plausible one at all.
   </div>
 
@@ -76,7 +76,7 @@
 
   <h2>Why this matters for biology</h2>
   <p>
-    Trajectories in single-cell data encode <strong>fate decisions</strong> —
+    Trajectories in single-cell data encode <strong>fate decisions</strong>
     which stem cells commit to which lineages, and when branching happens.
     A method that gets the snapshots right but the dynamics wrong can lead to
     incorrect biological conclusions: a smooth drift where there should be
@@ -87,7 +87,7 @@
     using five standard marginal metrics. The metrics produce
     <strong>inconsistent and contradictory rankings</strong> of the same methods
     across timepoints and datasets. FKL resolves those contradictions by
-    measuring what actually matters — the distance between full trajectory distributions.
+    measuring what actually matters the distance between full trajectory distributions.
   </p>
 
   <div style="margin-top:2.5rem;">
@@ -189,18 +189,18 @@ function roundRect(cx,x,y,w,h,r){
 
 const SCENES = [
   {
-    cap:`<strong>A single cell at t₀.</strong> It's alive, it will change — but we can't follow it. The moment we measure it, it's gone. Omics measurements are destructive: measuring a cell means destroying it.`,
+    cap:`<strong>A single cell at t₀.</strong> It's alive, it will change but we can't follow it. The moment we measure it, it's gone. Omics measurements are destructive: measuring a cell means destroying it.`,
     draw(){ ctx.clearRect(0,0,W,H); ctx.fillStyle=bgc(); ctx.fillRect(0,0,W,H); drawGrid(); drawSingleCell(); }
   },
   {
-    cap:`<strong>Which path did it take?</strong> The cell will move through gene-expression space — but without continuous tracking, we have no idea which trajectory it followed.`,
+    cap:`<strong>Which path did it take?</strong> The cell will move through gene-expression space but without continuous tracking, we have no idea which trajectory it followed.`,
     draw(){
       ctx.clearRect(0,0,W,H); ctx.fillStyle=bgc(); ctx.fillRect(0,0,W,H); drawGrid();
       PATHS.forEach(p=>drawPath(p,0.15)); drawSingleCell();
     }
   },
   {
-    cap:`<strong>We take a snapshot at t₁.</strong> We sacrifice a fresh batch of cells and measure where they are — one frozen moment. This constrains the trajectory somewhat, but only at that instant.`,
+    cap:`<strong>We take a snapshot at t₁.</strong> We sacrifice a fresh batch of cells and measure where they are one frozen moment. This constrains the trajectory somewhat, but only at that instant.`,
     draw(){
       ctx.clearRect(0,0,W,H); ctx.fillStyle=bgc(); ctx.fillRect(0,0,W,H); drawGrid();
       drawSingleCell(); drawSnap(0.25,true);
@@ -209,7 +209,7 @@ const SCENES = [
     }
   },
   {
-    cap:`Does one snapshot constrain the path? Somewhat — but <strong>many different trajectories still pass through that same point.</strong> The snapshot tells us where; it doesn't tell us how.`,
+    cap:`Does one snapshot constrain the path? Somewhat but <strong>many different trajectories still pass through that same point.</strong> The snapshot tells us where; it doesn't tell us how.`,
     draw(){
       ctx.clearRect(0,0,W,H); ctx.fillStyle=bgc(); ctx.fillRect(0,0,W,H); drawGrid();
       PATHS.forEach(p=>{ ctx.save(); ctx.beginPath(); ctx.rect(0,0,PAD+0.27*(W-2*PAD),H); ctx.clip(); drawPath(p,0.55); ctx.restore(); });
@@ -217,7 +217,7 @@ const SCENES = [
     }
   },
   {
-    cap:`<strong>More snapshots at t₂ and t₃.</strong> Each new timepoint costs more cells. Each one narrows things down — but only at that instant. What happens <em>between</em> snapshots remains invisible.`,
+    cap:`<strong>More snapshots at t₂ and t₃.</strong> Each new timepoint costs more cells. Each one narrows things down but only at that instant. What happens <em>between</em> snapshots remains invisible.`,
     draw(){
       ctx.clearRect(0,0,W,H); ctx.fillStyle=bgc(); ctx.fillRect(0,0,W,H); drawGrid();
       PATHS.forEach(p=>{ ctx.save(); ctx.beginPath(); ctx.rect(0,0,PAD+0.77*(W-2*PAD),H); ctx.clip(); drawPath(p,0.55); ctx.restore(); });
@@ -225,7 +225,7 @@ const SCENES = [
     }
   },
   {
-    cap:`<strong>Even with all five snapshots, the path is still ambiguous.</strong> Every coloured line passes through every pink dot — yet they describe completely different dynamics. This is called non-identifiability: the marginals don't determine the path measure.`,
+    cap:`<strong>Even with all five snapshots, the path is still ambiguous.</strong> Every coloured line passes through every pink dot yet they describe completely different dynamics. This is called non-identifiability: the marginals don't determine the path measure.`,
     draw(){
       ctx.clearRect(0,0,W,H); ctx.fillStyle=bgc(); ctx.fillRect(0,0,W,H); drawGrid();
       PATHS.forEach(p=>drawPath(p,0.7)); SNAP_T.forEach(t=>drawSnap(t)); drawSingleCell();
@@ -240,7 +240,7 @@ const SCENES = [
     }
   },
   {
-    cap:`<strong>Marginal metrics score all three paths identically.</strong> They check "do simulated cells land near the pink dots?" — not how they got there. This is why path-space evaluation matters. FKL measures the distance between the full distributions over trajectories.`,
+    cap:`<strong>Marginal metrics score all three paths identically.</strong> They check "do simulated cells land near the pink dots?" not how they got there. This is why path-space evaluation matters. FKL measures the distance between the full distributions over trajectories.`,
     draw(){
       ctx.clearRect(0,0,W,H); ctx.fillStyle=bgc(); ctx.fillRect(0,0,W,H); drawGrid();
       PATHS.forEach(p=>drawPath(p,0.7)); SNAP_T.forEach(t=>drawSnap(t)); drawSingleCell();
@@ -249,7 +249,7 @@ const SCENES = [
       ctx.strokeStyle=dark()?'rgba(255,255,255,0.12)':'rgba(0,0,0,0.10)'; ctx.lineWidth=0.5;
       roundRect(ctx,bx-bw,by,bw,bh,8); ctx.fill(); ctx.stroke();
       ctx.font='11px -apple-system,sans-serif'; ctx.fillStyle=tc(); ctx.textAlign='center';
-      ctx.fillText('Marginal W₂ score — all methods',bx-bw/2,by+17);
+      ctx.fillText('Marginal W₂ score all methods',bx-bw/2,by+17);
       ctx.font='500 12px -apple-system,sans-serif';
       [[PATHS[0].col,'1: 0.18'],[PATHS[1].col,'2: 0.17'],[PATHS[2].col,'3: 0.18']].forEach(([col,lbl],i)=>{
         ctx.fillStyle=col; ctx.fillText(lbl,bx-bw*(0.75-i*0.25),by+38);
