@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Results — FKL Blog</title>
+  <title>Results  FKL Blog</title>
   <link rel="stylesheet" href="style.css" />
   <style>
     /* ── tabs ── */
@@ -193,7 +193,7 @@
   <p class="lead">
     Six trajectory inference methods, five standard metrics, three synthetic datasets
     and two real single-cell datasets. The marginal metrics produce
-    inconsistent and often contradictory rankings — sometimes reversing their winner
+    inconsistent and often contradictory rankings  sometimes reversing their winner
     when you switch datasets, timepoints, or even just the metric itself.
     FKL gives one coherent ordering that aligns with the ground truth every time.
   </p>
@@ -203,8 +203,8 @@
 
   <hr class="divider" />
 
-  <!-- ══ SECTION 1 — SETUP ══ -->
-  <h2>1 — The benchmark</h2>
+  <!-- ══ SECTION 1  SETUP ══ -->
+  <h2>1  The benchmark</h2>
 
   <p>
     The paper evaluates six methods spanning the main families of trajectory inference.
@@ -227,37 +227,37 @@
       <tr>
         <td><span class="method-dot" style="background:#1D9E75"></span><strong style="color:var(--text)">SBIRR</strong></td>
         <td>Schrödinger Bridge</td>
-        <td>SB with iterative reference refinement — injects structural constraints on the drift to shape implied trajectories</td>
+        <td>SB with iterative reference refinement  injects structural constraints on the drift to shape implied trajectories</td>
         <td><span class="verdict-pill good">Yes</span></td>
       </tr>
       <tr>
         <td><span class="method-dot" style="background:#7F77DD"></span><strong style="color:var(--text)">vSB</strong></td>
         <td>Schrödinger Bridge</td>
-        <td>Vanilla SB baseline with a Brownian motion reference — no additional structural constraints</td>
+        <td>Vanilla SB baseline with a Brownian motion reference  no additional structural constraints</td>
         <td><span class="verdict-pill good">Yes</span></td>
       </tr>
       <tr>
         <td><span class="method-dot" style="background:#EF9F27"></span><strong style="color:var(--text)">MSBM</strong></td>
         <td>Schrödinger Bridge</td>
-        <td>Multi-marginal SB matching — learns forward/backward diffusion satisfying multiple intermediate marginal constraints simultaneously</td>
+        <td>Multi-marginal SB matching  learns forward/backward diffusion satisfying multiple intermediate marginal constraints simultaneously</td>
         <td><span class="verdict-pill good">Yes</span></td>
       </tr>
       <tr>
         <td><span class="method-dot" style="background:#D4537E"></span><strong style="color:var(--text)">MFL</strong></td>
         <td>SDE</td>
-        <td>Mean-Field Langevin in path space — targets drift-diffusion population dynamics by optimising a min-entropy objective relative to Wiener measure</td>
+        <td>Mean-Field Langevin in path space  targets drift-diffusion population dynamics by optimising a min-entropy objective relative to Wiener measure</td>
         <td><span class="verdict-pill good">Yes</span></td>
       </tr>
       <tr>
         <td><span class="method-dot" style="background:#534AB7"></span><strong style="color:var(--text)">AM</strong></td>
         <td>SDE</td>
-        <td>Action Matching — learns deterministic velocity fields with optional entropic (stochastic) variant used here</td>
+        <td>Action Matching  learns deterministic velocity fields with optional entropic (stochastic) variant used here</td>
         <td><span class="verdict-pill mid">Opt.</span></td>
       </tr>
       <tr>
         <td><span class="method-dot" style="background:#BA7517"></span><strong style="color:var(--text)">TIGON</strong></td>
         <td>ODE</td>
-        <td>Formulates TI as dynamic unbalanced optimal transport governed by a PDE, solved via neural ODEs — deterministic by design</td>
+        <td>Formulates TI as dynamic unbalanced optimal transport governed by a PDE, solved via neural ODEs  deterministic by design</td>
         <td><span class="verdict-pill bad">No</span></td>
       </tr>
     </tbody>
@@ -268,8 +268,8 @@
     can be simulated exactly: <strong>Lotka-Volterra</strong> (predator-prey oscillator,
     2D), <strong>Repressilator</strong> (three-gene regulatory oscillator, 3D), and
     <strong>Petal</strong> (eight-branch bifurcation mimicking cellular differentiation, 2D).
-    Plus two real scRNA-seq datasets — <strong>Embryoid Body (EB)</strong> and
-    <strong>Human Embryonic Stem Cell (hESC)</strong> — where no ground-truth trajectories
+    Plus two real scRNA-seq datasets  <strong>Embryoid Body (EB)</strong> and
+    <strong>Human Embryonic Stem Cell (hESC)</strong>  where no ground-truth trajectories
     exist.
   </p>
   <p>
@@ -277,17 +277,17 @@
     Distance (W₁/EMD), Wasserstein-2 (W₂), Sliced Wasserstein (SWD), Max-Sliced
     Wasserstein (MWD), and Maximum Mean Discrepancy (MMD with RBF kernel, bandwidth σ = 1).
     All five measure how well a method's simulated cells match the observed snapshot
-    distributions — they say nothing about how cells moved between snapshots.
+    distributions  they say nothing about how cells moved between snapshots.
   </p>
 
   <hr class="divider" />
 
-  <!-- ══ SECTION 2 — INCONSISTENCY ══ -->
-  <h2>2 — Marginal metrics are inconsistent</h2>
+  <!-- ══ SECTION 2  INCONSISTENCY ══ -->
+  <h2>2  Marginal metrics are inconsistent</h2>
 
   <p>
     Select a dataset and a metric below. The table shows how methods rank at the
-    <em>last</em> validation snapshot under that metric. Then switch metrics — watch
+    <em>last</em> validation snapshot under that metric. Then switch metrics  watch
     the winner change on the same dataset at the same timepoint.
   </p>
 
@@ -311,7 +311,7 @@
   </div>
 
   <p>
-    This isn't just a matter of degree — the methods that win and lose
+    This isn't just a matter of degree  the methods that win and lose
     <strong>swap positions entirely</strong> depending on which metric you pick.
     For example, on Lotka-Volterra at the last snapshot, TIGON ranks best under MMD
     but 5th under W₂. On Repressilator, MFL ranks above SBIRR under MMD
@@ -322,35 +322,35 @@
     There's also a deeper issue: <strong>the same method can rank first at one
     timepoint and last at another</strong>. On Lotka-Volterra, SBIRR and vSB alternate
     as the top performer across the four validation snapshots. On Repressilator, SBIRR
-    leads early but degrades by the last snapshot while vSB — which produces visually
-    implausible dynamics — suddenly scores well. A metric that fluctuates this much
+    leads early but degrades by the last snapshot while vSB  which produces visually
+    implausible dynamics  suddenly scores well. A metric that fluctuates this much
     across timepoints cannot tell you whether a method has captured the underlying process.
   </p>
 
   <div class="conflict-box">
     <h4>Why MMD behaves differently from the Wasserstein metrics</h4>
     <p>
-      MMD with a fixed bandwidth kernel can <strong>saturate</strong> — once two
+      MMD with a fixed bandwidth kernel can <strong>saturate</strong>  once two
       distributions are further apart than the kernel's bandwidth, the MMD score barely
       changes even as the actual discrepancy grows. On Repressilator, OT metrics (W₁, W₂)
       for Action Matching increase sharply across validation snapshots, reflecting
       trajectories drifting far from the truth. MMD for the same method barely moves.
-      This is not a disagreement about which method is better — it's MMD becoming
+      This is not a disagreement about which method is better  it's MMD becoming
       insensitive to exactly the kind of discrepancy that matters.
     </p>
   </div>
 
   <hr class="divider" />
 
-  <!-- ══ SECTION 3 — FKL RANKING ══ -->
-  <h2>3 — FKL gives a stable, coherent ranking</h2>
+  <!-- ══ SECTION 3  FKL RANKING ══ -->
+  <h2>3  FKL gives a stable, coherent ranking</h2>
 
   <p>
     FKL computes the KL divergence between the full distribution of trajectories
     produced by each method and the ground-truth path measure.
     Lower FKL = the method's trajectories are closer, in a distributional sense,
     to the real thing. <strong>VAL</strong> (trajectories resampled from the same
-    ground-truth SDE) sets the noise floor — the minimum FKL achievable with
+    ground-truth SDE) sets the noise floor  the minimum FKL achievable with
     perfect inference.
   </p>
   <p>
@@ -374,17 +374,17 @@
 
   <hr class="divider" />
 
-  <!-- ══ SECTION 4 — REPRESSILATOR DEEP DIVE ══ -->
-  <h2>4 — A concrete contradiction: Repressilator</h2>
+  <!-- ══ SECTION 4  REPRESSILATOR DEEP DIVE ══ -->
+  <h2>4  A concrete contradiction: Repressilator</h2>
 
   <p>
-    The Repressilator is a three-gene oscillator — its ground-truth trajectories trace
+    The Repressilator is a three-gene oscillator  its ground-truth trajectories trace
     a torus-like path in 3D gene-expression space as the three genes take turns
     suppressing each other in a cycle. This is genuinely difficult to capture.
   </p>
   <p>
     Under marginal metrics, <strong>TIGON ranks second overall</strong> on the
-    Repressilator — it passes through the correct regions at every validation snapshot.
+    Repressilator  it passes through the correct regions at every validation snapshot.
     But look at Figure 1 in the paper: TIGON's trajectories form a
     <em>smooth spiral</em> that circles the torus monotonically. The real dynamics
     are stochastic oscillations that repeatedly cycle. TIGON has learned a shortcut
@@ -392,19 +392,19 @@
   </p>
   <p>
     FKL catches this. TIGON's FKL (19.0) is nearly 50% higher than SBIRR's (13.4),
-    correctly reflecting that its dynamics — however well it matches snapshots — are
+    correctly reflecting that its dynamics  however well it matches snapshots  are
     fundamentally different from the ground truth. The marginal metrics, operating only
     on static distributions at fixed times, are completely blind to this.
   </p>
 
   <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; margin:1.25rem 0;">
     <div style="border:0.5px solid var(--border); border-radius:var(--radius); padding:14px 16px; background:var(--bg2);">
-      <div style="font-size:11px; color:var(--text3); margin-bottom:6px; text-transform:uppercase; letter-spacing:.05em;">SBIRR — FKL</div>
+      <div style="font-size:11px; color:var(--text3); margin-bottom:6px; text-transform:uppercase; letter-spacing:.05em;">SBIRR  FKL</div>
       <div style="font-size:28px; font-weight:500; color:#1D9E75;">13.4</div>
       <div style="font-size:12px; color:var(--text2); margin-top:4px;">Stochastic SB drift. Correctly captures oscillatory dynamics.</div>
     </div>
     <div style="border:0.5px solid var(--border); border-radius:var(--radius); padding:14px 16px; background:var(--bg2);">
-      <div style="font-size:11px; color:var(--text3); margin-bottom:6px; text-transform:uppercase; letter-spacing:.05em;">TIGON — FKL</div>
+      <div style="font-size:11px; color:var(--text3); margin-bottom:6px; text-transform:uppercase; letter-spacing:.05em;">TIGON  FKL</div>
       <div style="font-size:28px; font-weight:500; color:#BA7517;">19.0</div>
       <div style="font-size:12px; color:var(--text2); margin-top:4px;">ODE-based smooth spiral. Marginals match; dynamics don't.</div>
     </div>
@@ -417,11 +417,11 @@
 
   <hr class="divider" />
 
-  <!-- ══ SECTION 5 — PETAL CASE STUDY ══ -->
-  <h2>5 — The Petal case: same snapshot, completely different dynamics</h2>
+  <!-- ══ SECTION 5  PETAL CASE STUDY ══ -->
+  <h2>5  The Petal case: same snapshot, completely different dynamics</h2>
 
   <p>
-    The Petal dataset has eight sinusoidal branches radiating from the origin —
+    The Petal dataset has eight sinusoidal branches radiating from the origin 
     cells start clustered together and bifurcate into distinct lineages. Getting this
     right means producing trajectories that <em>fan out</em> into the correct branches,
     not just landing near the right snapshot distributions.
@@ -430,7 +430,7 @@
     At τ = 0.75, TIGON scores <em>slightly better</em> than MSBM on W₂ (0.155 vs 0.160)
     and clearly better on MMD (0.018 vs 0.057). Based on marginal metrics alone,
     you would declare TIGON the winner. FKL tells the opposite story: MSBM = 13.6,
-    TIGON = 36.5. That's a 2.7× difference — a massive gap invisible to W₂.
+    TIGON = 36.5. That's a 2.7× difference  a massive gap invisible to W₂.
   </p>
 
   <div class="two-col">
@@ -444,7 +444,7 @@
       </div>
       <canvas class="case-cv" id="cv-msbm" height="180"></canvas>
       <div class="method-verdict">
-        Trajectories fan out into distinct bundles — one per branch. The bifurcation
+        Trajectories fan out into distinct bundles  one per branch. The bifurcation
         structure is preserved. W₂ is marginally worse because the bundles spread slightly
         wider than the snapshot cloud, but the <em>dynamics</em> are correct.
       </div>
@@ -460,7 +460,7 @@
       <canvas class="case-cv" id="cv-tigon" height="180"></canvas>
       <div class="method-verdict">
         Trajectories converge to the snapshot positions but don't separate into branches
-        along the way — cells follow smooth undifferentiated paths. The snapshot is hit;
+        along the way  cells follow smooth undifferentiated paths. The snapshot is hit;
         the bifurcation is missed entirely.
       </div>
     </div>
@@ -469,18 +469,18 @@
   <p style="font-size:14px; color:var(--text2); line-height:1.7; margin-top:0.5rem;">
     This is the core problem with marginal evaluation in a single sentence:
     <strong style="color:var(--text);">a method can get the destination right without
-    getting the journey right.</strong> In biology, the journey — which cells took
-    which lineage, when the commitment happened, what the transition looked like —
+    getting the journey right.</strong> In biology, the journey  which cells took
+    which lineage, when the commitment happened, what the transition looked like 
     is usually what you actually care about.
   </p>
 
   <hr class="divider" />
 
-  <!-- ══ SECTION 6 — REAL DATA ══ -->
-  <h2>6 — Real data: no ground truth, but FKL still reveals structure</h2>
+  <!-- ══ SECTION 6  REAL DATA ══ -->
+  <h2>6  Real data: no ground truth, but FKL still reveals structure</h2>
 
   <p>
-    On real scRNA-seq datasets there are no ground-truth trajectories — cells are
+    On real scRNA-seq datasets there are no ground-truth trajectories  cells are
     measured destructively, so individual paths can never be observed. Most evaluation
     protocols resort to marginal metrics for exactly this reason.
   </p>
@@ -489,7 +489,7 @@
     models differentiation as a stochastic drift-diffusion process, which matches
     established biological understanding of how cells commit to lineages. FKL then
     quantifies how closely each other method recovers those stochastic dynamics.
-    This is a principled proxy, not a ground truth — but it captures something
+    This is a principled proxy, not a ground truth  but it captures something
     marginal metrics cannot: whether a method's implied dynamics are plausible.
   </p>
 
@@ -503,11 +503,11 @@
         <p>
           FKL correctly recovers the similarity between SB-family methods:
           vSB, MSBM, and MFL all share the same core stochastic assumptions as
-          the SBIRR reference, so their dynamics are similar — and FKL reflects this.
+          the SBIRR reference, so their dynamics are similar  and FKL reflects this.
         </p>
         <div class="finding-row">
           <span class="finding-label">MFL</span>
-          <span class="finding-val good">FKL = 42.8 — best</span>
+          <span class="finding-val good">FKL = 42.8  best</span>
         </div>
         <div class="finding-row">
           <span class="finding-label">MSBM</span>
@@ -519,10 +519,10 @@
         </div>
         <div class="finding-row">
           <span class="finding-label">TIGON</span>
-          <span class="finding-val bad">FKL = 71.7 — worst</span>
+          <span class="finding-val bad">FKL = 71.7  worst</span>
         </div>
         <div class="real-insight">
-          Marginal metrics on EB are relatively consistent here — SB methods
+          Marginal metrics on EB are relatively consistent here  SB methods
           score well on both marginals and FKL. This is the "easy" case where
           both types of evaluation happen to agree.
         </div>
@@ -543,7 +543,7 @@
         </p>
         <div class="finding-row">
           <span class="finding-label">vSB</span>
-          <span class="finding-val good">FKL = 89.8 — best</span>
+          <span class="finding-val good">FKL = 89.8  best</span>
         </div>
         <div class="finding-row">
           <span class="finding-label">MSBM</span>
@@ -554,7 +554,7 @@
           <span class="finding-val bad">FKL = 103.0</span>
         </div>
         <div class="real-insight">
-          <strong>The gap:</strong> TIGON's ODE-based trajectories are too smooth —
+          <strong>The gap:</strong> TIGON's ODE-based trajectories are too smooth 
           they don't reflect the inherent stochasticity of stem cell differentiation.
           Marginals look fine; the dynamics are wrong. A researcher relying only on
           W₂ would conclude TIGON is the best available method for this dataset.
@@ -566,8 +566,8 @@
 
   <hr class="divider" />
 
-  <!-- ══ SECTION 7 — TAKEAWAYS ══ -->
-  <h2>7 — What this means in practice</h2>
+  <!-- ══ SECTION 7  TAKEAWAYS ══ -->
+  <h2>7  What this means in practice</h2>
 
   <p>
     Three patterns emerge consistently across all five datasets:
@@ -594,7 +594,7 @@
       </tr>
       <tr>
         <td><strong style="color:var(--text)">Structural constraints in SBIRR pay off under FKL</strong></td>
-        <td>SBIRR consistently ranks #1 on FKL for the stochastic datasets. Its iterative reference refinement encodes knowledge about the dynamics — and FKL measures exactly whether that knowledge is right.</td>
+        <td>SBIRR consistently ranks #1 on FKL for the stochastic datasets. Its iterative reference refinement encodes knowledge about the dynamics  and FKL measures exactly whether that knowledge is right.</td>
         <td>Best FKL on Lotka-Volterra (30.8), Repressilator (13.4)</td>
       </tr>
     </tbody>
@@ -603,7 +603,7 @@
   <div class="callout" style="margin-top:1.5rem;">
     <strong>The bottom line:</strong> marginal metrics measure whether a method can
     reconstruct static distributions at fixed timepoints. FKL measures whether a method
-    has learned the actual dynamics of the system. These are different questions —
+    has learned the actual dynamics of the system. These are different questions 
     and for trajectory inference, the second question is the one that matters.
   </div>
 
@@ -635,7 +635,7 @@
   };
 
   const METHOD_DESC = {
-    VAL:   'Ground-truth resampled — noise floor',
+    VAL:   'Ground-truth resampled  noise floor',
     SBIRR: 'SB with iterative reference refinement',
     vSB:   'Vanilla Schrödinger Bridge',
     MSBM:  'Multi-Marginal SB Matching',
@@ -674,14 +674,14 @@
   };
 
   const FKL_NOTES = {
-    lv: `<strong>SBIRR ranks best (30.8)</strong>, the only SB method with structural constraints on intermediate dynamics. vSB is worst (94.7) — it connects point clouds across the predator-prey oscillation without capturing the cyclic patterns. TIGON (64.4) ranks 5th despite competitive marginal scores: its ODE trajectories can't represent the inherent stochasticity of the prey-predator interaction. VAL (7.3) sets the noise floor — achievable only by resampling from the true process.`,
-    rep: `<strong>SBIRR again leads (13.4)</strong>. TIGON (19.0) ranks 3rd — better than most SB methods, but note this is the "smooth spiral" problem: TIGON's marginal scores are competitive precisely because it shortcuts through the right regions, but its trajectories don't oscillate. The gap between SBIRR (13.4) and TIGON (19.0) is 42% — invisible to W₂, which ranks TIGON above SBIRR at the final snapshot.`,
-    petal: `<strong>MSBM leads (13.6)</strong>, correctly capturing the eight-branch bifurcation structure. TIGON (36.5) is last — its smooth ODE paths can't represent the sharp bifurcation. Critically, W₂ ranks TIGON above MSBM (0.155 vs 0.160). FKL reverses this ranking: MSBM's 2.7× better FKL reflects that it found the actual branching dynamics, not just the snapshot distributions.`,
+    lv: `<strong>SBIRR ranks best (30.8)</strong>, the only SB method with structural constraints on intermediate dynamics. vSB is worst (94.7)  it connects point clouds across the predator-prey oscillation without capturing the cyclic patterns. TIGON (64.4) ranks 5th despite competitive marginal scores: its ODE trajectories can't represent the inherent stochasticity of the prey-predator interaction. VAL (7.3) sets the noise floor  achievable only by resampling from the true process.`,
+    rep: `<strong>SBIRR again leads (13.4)</strong>. TIGON (19.0) ranks 3rd  better than most SB methods, but note this is the "smooth spiral" problem: TIGON's marginal scores are competitive precisely because it shortcuts through the right regions, but its trajectories don't oscillate. The gap between SBIRR (13.4) and TIGON (19.0) is 42%  invisible to W₂, which ranks TIGON above SBIRR at the final snapshot.`,
+    petal: `<strong>MSBM leads (13.6)</strong>, correctly capturing the eight-branch bifurcation structure. TIGON (36.5) is last  its smooth ODE paths can't represent the sharp bifurcation. Critically, W₂ ranks TIGON above MSBM (0.155 vs 0.160). FKL reverses this ranking: MSBM's 2.7× better FKL reflects that it found the actual branching dynamics, not just the snapshot distributions.`,
   };
 
   const FKL_CONFLICTS = {
-    lv: `On Lotka-Volterra, W₂ ranks TIGON 2nd (0.351), ahead of SBIRR (0.420). FKL ranks TIGON 5th (64.4) vs SBIRR 1st (30.8). The methods literally exchange positions — and FKL is correct, because SBIRR's trajectories visually reproduce the oscillatory predator-prey loop while TIGON's do not.`,
-    rep: `On Repressilator, W₂ ranks TIGON 2nd (0.916) and SBIRR last among real methods (1.894). FKL reverses this completely — SBIRR first (13.4), TIGON third (19.0). The 2× gap in W₂ in favour of TIGON is entirely explained by TIGON's smooth spiral hitting the right snapshots without oscillating.`,
+    lv: `On Lotka-Volterra, W₂ ranks TIGON 2nd (0.351), ahead of SBIRR (0.420). FKL ranks TIGON 5th (64.4) vs SBIRR 1st (30.8). The methods literally exchange positions  and FKL is correct, because SBIRR's trajectories visually reproduce the oscillatory predator-prey loop while TIGON's do not.`,
+    rep: `On Repressilator, W₂ ranks TIGON 2nd (0.916) and SBIRR last among real methods (1.894). FKL reverses this completely  SBIRR first (13.4), TIGON third (19.0). The 2× gap in W₂ in favour of TIGON is entirely explained by TIGON's smooth spiral hitting the right snapshots without oscillating.`,
     petal: `On Petal, W₂ and MMD both rank TIGON above MSBM. FKL ranks MSBM 2.7× better than TIGON. This is the starkest example in the paper: visually, MSBM fans into branches while TIGON converges to single points. The metric that sees trajectories (FKL) gets this right; the metrics that see only snapshots (W₂, MMD) get it wrong.`,
   };
 
@@ -720,7 +720,7 @@
     sorted.forEach(([m, v], i) => {
       const cls = i===0?'r1':i===1?'r2':'';
       const isVal = m === 'VAL';
-      const fklRank = isVal ? '—' : `#${fklRankMap[m]}`;
+      const fklRank = isVal ? '' : `#${fklRankMap[m]}`;
       const margRank = i + 1;
       const fklR = isVal ? 0 : fklRankMap[m];
       let deltaHtml = '';
@@ -743,11 +743,11 @@
 
     const noteEl = document.getElementById('inconsistency-note');
     if (inconsistent) {
-      noteEl.innerHTML = `<strong>Inconsistency detected on ${({lv:'Lotka-Volterra',rep:'Repressilator',petal:'Petal'})[curDs]}:</strong> the winner changes depending on which metric you use —
+      noteEl.innerHTML = `<strong>Inconsistency detected on ${({lv:'Lotka-Volterra',rep:'Repressilator',petal:'Petal'})[curDs]}:</strong> the winner changes depending on which metric you use 
         <strong>${winners[0]}</strong> (W₁) → <strong>${winners[1]}</strong> (W₂) → <strong>${winners[2]}</strong> (SWD) → <strong>${winners[3]}</strong> (MMD).
         The "FKL rank" column shows where FKL places each method. Note the mismatches.`;
     } else {
-      noteEl.innerHTML = `Rankings for <strong>${{lv:'Lotka-Volterra',rep:'Repressilator',petal:'Petal'}[curDs]}</strong> at the last validation snapshot. The "FKL rank" column shows where FKL places each method — compare it against the marginal ranking. Switch metrics to see the winner change.`;
+      noteEl.innerHTML = `Rankings for <strong>${{lv:'Lotka-Volterra',rep:'Repressilator',petal:'Petal'}[curDs]}</strong> at the last validation snapshot. The "FKL rank" column shows where FKL places each method  compare it against the marginal ranking. Switch metrics to see the winner change.`;
     }
   }
 
