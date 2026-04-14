@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>How FKL Works — FKL Blog</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-chtml.min.js"></script>
+  <style>
+    .math-block {
+      overflow-x: auto; padding: 1.1rem 1.4rem;
+      background: var(--bg2); border-radius: var(--radius);
+      border: 0.5px solid var(--border); margin: 1.25rem 0; line-height: 2.2;
+    }
+    .math-block.key { border-color: var(--accent); border-width: 1.5px; }
+    .math-label {
+      font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase;
+      color: var(--text3); display: block; margin-bottom: 0.4rem;
+    }
+    .math-label.accent { color: var(--accent); }
+
+    .assumption {
+      border: 0.5px solid var(--border); border-radius: var(--radius);
+      padding: 1rem 1.25rem; margin: 1rem 0;
+    }
+    .assumption-tag {
+      display: inline-block; font-size: 11px; font-weight: 500;
+      letter-spacing: 0.05em; text-transform: uppercase;
+      padding: 2px 10px; border-radius: 4px; margin-bottom: 0.5rem;
+      background: var(--bg3); color: var(--accent);
+    }
+    .assumption h3 { font-size: 0.95rem; font-weight: 500; margin: 0 0 0.4rem; }
+    .assumption p  { font-size: 14px; margin: 0; color: var(--text2); line-height: 1.65; }
+    .assumption p + p { margin-top: 0.5rem; }
+    .assumption code {
+      font-size: 12px; background: var(--bg3);
+      padding: 1px 6px; border-radius: 3px; color: var(--accent);
+    }
+
+    .factor-table { margin: 0.75rem 0 1rem; }
+    .factor-row {
+      display: grid; grid-template-columns: 160px 1fr;
+      gap: 0 20px; padding: 0.65rem 0;
+      border-top: 0.5px solid var(--border); align-items: start;
+    }
+    .factor-row:last-child { border-bottom: 0.5px solid var(--border); }
+    .factor-key {
+      font-family: var(--font-mono, monospace); font-size: 13px; font-weight: 500;
+      color: var(--accent); line-height: 1.5; padding-top: 1px; word-break: break-all;
+    }
+    .factor-desc { font-size: 14px; color: var(--text2); line-height: 1.65; }
+    @media (max-width: 480px) { .factor-row { grid-template-columns: 1fr; gap: 4px 0; } }
+
+    .ffm-wrap {
+      border: 0.5px solid var(--border); border-radius: var(--radius);
+      background: var(--bg2); overflow: hidden; margin: 1.25rem 0;
+    }
+    .ffm-canvas { display: block; width: 100%; }
+    .ffm-controls {
+      padding: 10px 14px; border-top: 0.5px solid var(--border);
+      display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+    }
+    .ffm-controls label { font-size: 12px; color: var(--text3); }
+    .ffm-controls input[type=range] { flex: 1; min-width: 80px; }
+    .sim-readout { font-size: 12px; font-weight: 500; color: var(--accent); min-width: 28px; }
+    .diagram-caption { font-size: 12px; color: var(--text3); margin-top: 6px; text-align: center; line-height: 1.6; }
+
+    .step-row {
+      display: grid; grid-template-columns: 28px 1fr;
+      gap: 0 14px; margin-bottom: 1.1rem; align-items: start;
+    }
+    .step-num {
+      width: 26px; height: 26px; border-radius: 50%;
+      border: 0.5px solid var(--border2);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12px; font-weight: 500; color: var(--accent);
+      flex-shrink: 0; margin-top: 2px;
+    }
+    .step-body h4 { font-size: 14px; font-weight: 500; margin: 0 0 0.2rem; }
+    .step-body p  { font-size: 14px; color: var(--text2); margin: 0; line-height: 1.65; }
+
+    .ms-diagram { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin: 1.25rem 0; }
+    @media(max-width:480px){ .ms-diagram { grid-template-columns: 1fr; } }
+    .ms-card {
+      border: 0.5px solid var(--border); border-radius: var(--radius);
+      overflow: hidden; background: var(--bg2);
+    }
+    .ms-card-head { padding: 7px 12px; border-bottom: 0.5px solid var(--border); font-size: 12px; font-weight: 500; }
+    canvas.ms-cv { display: block; width: 100%; }
+    .ms-card-foot { padding: 7px 12px; border-top: 0.5px solid var(--border); font-size: 12px; color: var(--text2); line-height: 1.55; }
+
+    .deriv-chain { margin: 1.25rem 0; }
+    .deriv-step {
+      display: flex; gap: 12px; align-items: flex-start;
+      padding: 0.75rem 0; border-top: 0.5px solid var(--border);
+    }
+    .deriv-step:last-child { border-bottom: 0.5px solid var(--border); }
+    .deriv-icon { font-size: 15px; min-width: 24px; text-align: center; margin-top: 2px; flex-shrink: 0; }
+    .deriv-text { font-size: 14px; color: var(--text2); line-height: 1.65; }
+    .deriv-text strong { color: var(--text); font-weight: 500; }
+  </style>
+</head>
+<body>
+
+<nav>
+  <a class="nav-brand" href="index.html">FKL <span>·</span> Path-Space Divergence</a>
+  <a href="index.html">Motivation</a>
+  <a href="method.html" class="active">Method</a>
+  <a href="results.html">Results</a>
+</nav>
+
+<div class="hero">
+  <div class="kicker">Method</div>
+  <h1>Comparing distributions over trajectories</h1>
+  <p class="lead">
+    FKL measures the KL divergence between two probability measures over
+    <em>function space</em> — the full space of possible trajectories.
+    Here's the idea, the two conditions required, and the formula that makes it computable.
+  </p>
+</div>
+
+<div class="page">
+
+  <hr class="divider" />
+
+  <!-- ── SECTION 1 ── -->
+  <h2>The object we want to measure</h2>
+
+  <p>
+    A trajectory inference method doesn't output a single path — it outputs a
+    <strong>probability distribution over paths</strong>. Call it \(\nu\). Two methods
+    give us \(\nu^A\) and \(\nu^B\). We want one number that captures how different
+    these two distributions are across the entire space of possible trajectories.
+  </p>
+  <p>The natural choice is the Kullback–Leibler divergence:</p>
+
+  <div class="math-block">
+    <span class="math-label">KL divergence on path space</span>
+    \[
+      \mathrm{KL}(\nu^A \| \nu^B)
+      \;=\;
+      \int_H \log \frac{d\nu^A}{d\nu^B}(x)\; d\nu^A(x)
+    \]
+  </div>
+
+  <p>
+    The term \(\frac{d\nu^A}{d\nu^B}(x)\) is the <strong>Radon–Nikodym derivative</strong>
+    (also called the <em>density ratio</em>): for each trajectory \(x\), it says how much
+    more probable that trajectory is under \(\nu^A\) than under \(\nu^B\). When both
+    distributions agree everywhere this ratio is 1 and KL = 0. When they differ, KL grows.
+  </p>
+  <p>
+    The difficulty is that in <em>infinite-dimensional</em> spaces — where trajectories
+    live — the Radon–Nikodym derivative is fragile: without structural conditions it
+    doesn't exist and \(\mathrm{KL} = +\infty\) trivially. Two assumptions fix this.
+  </p>
+
+  <hr class="divider" />
+
+  <!-- ── SECTION 2 ── -->
+  <h2>Two conditions that make it well-defined</h2>
+
+  <div class="assumption">
+    <div class="assumption-tag">Assumption 1</div>
+    <h3>Absolute continuity — \(\nu^A \ll \nu^B\)</h3>
+    <p>
+      Formally: every set of trajectories with probability zero under \(\nu^B\) must
+      also have probability zero under \(\nu^A\). If \(\nu^A\) places mass somewhere
+      \(\nu^B\) has ruled out entirely, the density ratio is \(\frac{\text{positive}}{0}\)
+      — undefined — and the integral blows up.
+    </p>
+    <p>
+      <strong>What this means concretely:</strong> it requires that both methods share
+      the same support in trajectory space. Any trajectory that is possible under one
+      method must have a non-zero probability under the other — not necessarily the same
+      probability, but positive. In other words, neither method should generate
+      trajectories that are <em>structurally impossible</em> for the other.
+    </p>
+    <p>
+      <strong>How to ensure this in practice:</strong> the paper additionally requires
+      a uniform bound \(d\nu^A/d\nu^B \leq M\) almost surely. This is automatically
+      satisfied when both methods are trained under the same noise model and data
+      distribution, as the density ratio is continuous. The bound ensures the
+      KL integral is not just well-defined but finite.
+    </p>
+  </div>
+
+  <div class="assumption">
+    <div class="assumption-tag">Assumption 2</div>
+    <h3>Cameron–Martin support — trajectories must lie in \(H_C\)</h3>
+    <p>
+      This assumption is specific to infinite dimensions, and understanding it
+      requires knowing what goes wrong with Gaussian measures on function spaces.
+    </p>
+  </div>
+
+  <div class="ms-diagram">
+    <div class="ms-card">
+      <div class="ms-card-head" style="color:#1D9E75;">Finite dimensions — absolutely continuous</div>
+      <canvas class="ms-cv" id="ms-finite" height="130"></canvas>
+      <div class="ms-card-foot">
+        \(\mathcal{N}(m_1,\Sigma)\) and \(\mathcal{N}(m_2,\Sigma)\) share overlapping support.
+        The Radon–Nikodym derivative exists. KL = \(\tfrac{1}{2}\|m_1-m_2\|^2_{\Sigma^{-1}}\).
+      </div>
+    </div>
+    <div class="ms-card">
+      <div class="ms-card-head" style="color:#D4537E;">Infinite dimensions — mutually singular (generically)</div>
+      <canvas class="ms-cv" id="ms-infinite" height="130"></canvas>
+      <div class="ms-card-foot">
+        Same setup on function space. The two measures live on <em>disjoint</em> sets
+        with probability 1. No Radon–Nikodym derivative. KL = +∞.
+      </div>
+    </div>
+  </div>
+
+  <p>
+    The <strong>Cameron–Martin theorem</strong> gives the precise condition under which
+    two Gaussian measures on a Hilbert space avoid mutual singularity. Two measures
+    \(\mathcal{N}(m_1, C)\) and \(\mathcal{N}(m_2, C)\) are mutually absolutely
+    continuous — and have a well-defined density ratio — <strong>if and only if</strong>
+    \(m_1 - m_2\) lies in the <em>Cameron–Martin space</em> \(H_C\).
+    Note that this is not the only setting where two measures can be absolutely
+    continuous — it is the characterisation specific to Gaussian measures with equal
+    covariance \(C\), which is the case relevant here.
+  </p>
+  <p>
+    The Cameron–Martin space \(H_C\) is the reproducing kernel Hilbert space of \(C\):
+    the set of functions of the form \(C^{1/2}h\) for \(h\) in the base Hilbert space.
+    It can be thought of as the set of "perturbation directions" that the Gaussian
+    measure can absorb without becoming singular. The richer \(H_C\) is, the easier
+    the condition is to satisfy.
+  </p>
+  <p>
+    This depends critically on the <strong>covariance operator \(C\)</strong>:
+  </p>
+  <ul style="margin: 0.5rem 0 1rem 1.2rem; color: var(--text2); font-size: 14px; line-height: 2;">
+    <li>
+      <strong style="color:var(--text)">White noise covariance</strong> (all frequencies equal weight):
+      \(H_C\) is very small — only genuinely smoother-than-generic functions qualify.
+      Most pairs of trajectory distributions give mutually singular Gaussians.
+    </li>
+    <li>
+      <strong style="color:var(--text)">Matérn covariance</strong> \(C = \sigma^2(-\Delta + \tau^2 I)^{-\alpha}\)
+      (decaying for high frequencies): \(H_C\) consists of Sobolev \(H^\alpha\)
+      functions — a much larger and practically relevant space.
+      Any piecewise-smooth trajectory automatically satisfies the condition.
+    </li>
+  </ul>
+
+  <div class="assumption">
+    <div class="assumption-tag">Assumption 2 — formal</div>
+    <h3>Both \(\nu^A\) and \(\nu^B\) are supported on \(H_{\mu_0}\)</h3>
+    <p>
+      The noise \(\mu_0 = \mathcal{N}(0, C)\) is fixed. Both trajectory distributions
+      must assign probability 1 to the Cameron–Martin space \(H_C\) of this noise.
+      Under this condition, the interpolated measures \(\mu_t^A\) and \(\mu_t^B\)
+      remain mutually absolutely continuous for all \(t \in [0,1)\), and the
+      density ratio \(d\mu_t^A / d\mu_t^B\) exists at every \(t\).
+    </p>
+    <p>
+      <strong>How to ensure this in practice:</strong> apply a deterministic
+      smoothing projection \(T : H \to H_C\) to all trajectory data before training.
+      Concretely, this means (a) projecting onto a finite Fourier basis
+      (the paper uses 32–64 modes), and (b) using a <code>Matérn(ν=0.5)</code>
+      covariance for \(\mu_0\), whose Cameron–Martin space is \(H^1\)
+      (once-weakly-differentiable functions). Any \(L^2\) trajectory that is
+      piecewise smooth will lie in \(H^1\) after such projection.
+    </p>
+    <p>
+      Note: the condition can be relaxed — it suffices for <em>one</em> of the
+      two measures to be fully supported on \(H_C\), when combined with
+      Assumption 1's bounded density ratio. The paper uses both for cleaner theory.
+    </p>
+  </div>
+
+  <div class="callout">
+    Together these two conditions ensure the KL is finite and the Radon–Nikodym
+    derivative exists. They also unlock the Cameron–Martin theorem's explicit formula
+    for the log-gradient of the density ratio — which is the key ingredient in
+    turning the KL integral into something computable from velocity fields.
+  </div>
+
+  <hr class="divider" />
+
+  <!-- ── SECTION 3: FFM ── -->
+  <h2>Functional Flow Matching: transporting noise to trajectories</h2>
+
+  <p>
+    Rather than estimating the density ratio directly, FKL routes through a
+    continuous interpolation from a tractable noise distribution to the
+    trajectory distribution of interest.
+  </p>
+  <p>
+    The construction is <strong>Functional Flow Matching (FFM)</strong>. Fix a noise
+    measure \(\mu_0 = \mathcal{N}(0, C)\) with a Matérn covariance \(C\). For a
+    trajectory distribution \(\nu\), define the linear interpolation:
+  </p>
+
+  <div class="math-block">
+    <span class="math-label">FFM linear interpolation</span>
+    \[
+      X_t \;=\; (1-t)\,X_0 \;+\; t\,X_1,
+      \qquad X_0 \sim \mathcal{N}(0,C),\quad X_1 \sim \nu,\quad t\in[0,1]
+    \]
+  </div>
+
+  <p>
+    This defines a path of measures \(\mu_t\) from pure noise (\(t=0\)) to the
+    trajectory distribution (\(t=1\)). The animation below shows this process:
+    drag the slider and watch how noise curves morph into real trajectories.
+    <strong>The critical point: at \(t=0\) both methods start from exactly the same
+    noise distribution \(\mu_0\)</strong>. The only difference between their
+    interpolations is where they end up at \(t=1\).
+  </p>
+
+  <div class="ffm-wrap">
+    <canvas id="ffm-cv" class="ffm-canvas" height="200"></canvas>
+    <div class="ffm-controls">
+      <label>t =</label>
+      <input type="range" id="ffm-slider" min="0" max="100" value="0" step="1" />
+      <span class="sim-readout" id="ffm-val">0.00</span>
+      <label style="margin-left:6px;">Show:</label>
+      <button class="btn on" id="tog-A" style="font-size:11px;padding:3px 10px;color:#7F77DD;">Method A</button>
+      <button class="btn on" id="tog-B" style="font-size:11px;padding:3px 10px;color:#EF9F27;">Method B</button>
+    </div>
+  </div>
+  <p class="diagram-caption">
+    At \(t=0\): both methods start from <em>identical</em> noise samples — no information about which method you're using.
+    As \(t\to 1\): Method A (purple) converges to smooth drift trajectories; Method B (amber) to oscillatory ones.
+    FKL quantifies the divergence between these two paths of measures.
+  </p>
+
+  <p>
+    The flow is governed by a <em>velocity field</em> \(v_t : H \to H\) satisfying
+    the continuity equation \(\partial_t \mu_t + \nabla \cdot (\mu_t v_t) = 0\).
+    Under the linear interpolation, the conditional velocity field has a closed form:
+  </p>
+
+  <div class="math-block">
+    <span class="math-label">Conditional velocity (FFM)</span>
+    \[
+      v_t(x) \;=\; \frac{1}{1-t}\,\mathbb{E}[X_1 - X_0 \mid X_t = x]
+      \;=\; \frac{\mathbb{E}[X_1 \mid X_t = x] - x}{1-t}
+    \]
+  </div>
+
+  <p>
+    This is approximated by a <strong>Fourier Neural Operator (FNO)</strong>, an
+    architecture that processes functions at any resolution by operating in
+    frequency space — making the velocity estimator resolution-independent.
+  </p>
+
+  <hr class="divider" />
+
+  <!-- ── SECTION 4: derivation ── -->
+  <h2>From the Radon–Nikodym derivative to velocity fields</h2>
+
+  <p>
+    For two methods A and B, both starting from the same noise \(\mu_0\), define the
+    density ratio at interpolation time \(t\):
+    \(r_t = d\mu_t^A / d\mu_t^B\). At \(t=0\), \(r_0 \equiv 1\) (both distributions
+    are identical). At \(t=1\), \(r_1 = d\nu^A / d\nu^B\) is exactly the density ratio
+    we need. The KL is \(\int \log r_1\, d\nu^A\).
+  </p>
+  <p>
+    The derivation uses the structure of the interpolation — specifically, that
+    \(r_t^K = \mathbb{E}^B[r_t | \mathcal{G}_K]\) is a martingale as a function of
+    the truncation dimension \(K\) — together with the continuity equation, to express
+    the KL as an integral over \(t\):
+  </p>
+
+  <div class="deriv-chain">
+    <div class="deriv-step">
+      <div class="deriv-icon">①</div>
+      <div class="deriv-text">
+        <strong>Write KL as accumulation over \(t\).</strong>
+        Since \(r_0 \equiv 1\), the KL equals the total change in \(\int \log r_t^K\, d\mu_t^A\)
+        from \(t=0\) to \(t=1\), which decomposes into a time integral via the continuity equation.
+      </div>
+    </div>
+    <div class="deriv-step">
+      <div class="deriv-icon">②</div>
+      <div class="deriv-text">
+        <strong>Apply the continuity equation to \(\log r_t\).</strong>
+        The time derivative yields \(\int \langle v_t^A - v_t^B,\, \nabla_x \log r_t \rangle\, d\mu_t^A\).
+      </div>
+    </div>
+    <div class="deriv-step">
+      <div class="deriv-icon">③</div>
+      <div class="deriv-text">
+        <strong>Use the Cameron–Martin formula for \(\nabla_x \log r_t\).</strong>
+        By Assumptions 1–2 and the Cameron–Martin theorem:
+        \(\nabla_x \log \frac{d\mu_t^{A,B}}{d\rho_t}(x) = \frac{t}{(1-t)^2} C^{-1}\mathbb{E}[X_1 | X_t = x]\).
+        This links the log-gradient of the density ratio directly to the velocity field (Eq. 8).
+      </div>
+    </div>
+    <div class="deriv-step">
+      <div class="deriv-icon">④</div>
+      <div class="deriv-text">
+        <strong>Substitute, simplify, take \(K \to \infty\).</strong>
+        After substituting and applying the Martingale convergence theorem,
+        all terms involving individual density ratios cancel, leaving only the squared
+        velocity difference — the clean formula below.
+      </div>
+    </div>
+  </div>
+
+  <hr class="divider" />
+
+  <!-- ── SECTION 5: formula ── -->
+  <h2>The key formula</h2>
+
+  <div class="math-block key">
+    <span class="math-label accent">Functional KL — main result (Eq. 9 in the paper)</span>
+    \[
+      \mathrm{KL}(\nu^A \| \nu^B)
+      \;=\;
+      \int_0^1 \!\int_H
+        \frac{t}{1-t}
+        \;\bigl\|v_t^A(x) - v_t^B(x)\bigr\|_{C^{1/2}H}^{\,2}
+      \;d\mu^A_t(x)\;dt
+    \]
+  </div>
+
+  <div class="factor-table">
+    <div class="factor-row">
+      <div class="factor-key">v<sup>A</sup><sub>t</sub> − v<sup>B</sup><sub>t</sub></div>
+      <div class="factor-desc">The pointwise difference between the two velocity fields at interpolated position \(x\) and time \(t\). Zero where both methods agree on how the distribution is moving; large where they diverge.</div>
+    </div>
+    <div class="factor-row">
+      <div class="factor-key">‖ · ‖²<sub>C<sup>½</sup>H</sub></div>
+      <div class="factor-desc">The squared Cameron–Martin norm — the RKHS norm of \(C\). It down-weights high-frequency discrepancies (outside \(H_C\)) and up-weights low-frequency ones that the noise model can represent. This is where Assumption 2 enters.</div>
+    </div>
+    <div class="factor-row">
+      <div class="factor-key">t / (1−t)</div>
+      <div class="factor-desc">A time weight that grows toward \(t=1\). Near \(t=0\) both distributions look the same (pure noise), so discrepancies there matter less. Near \(t=1\) disagreements reflect genuine differences in the trajectory distributions. The divergence at \(t=1\) is handled by importance sampling in practice.</div>
+    </div>
+    <div class="factor-row">
+      <div class="factor-key">dμ<sup>A</sup><sub>t</sub> dt</div>
+      <div class="factor-desc">We integrate over interpolated points \(x_t \sim \mu_t^A\) at each \(t\). Both velocity networks are evaluated at the same point — no samples from \(\nu^B\) needed at estimation time.</div>
+    </div>
+  </div>
+
+  <div class="callout">
+    <strong>Why this matters:</strong> the KL divergence between two infinite-dimensional
+    trajectory distributions reduces to the expected squared difference of two
+    velocity functions, weighted by \(t/(1-t)\). No density estimation in high
+    dimensions, no ODE integration — just two FNO forward passes per sample.
+  </div>
+
+  <hr class="divider" />
+
+  <!-- ── SECTION 6: estimation ── -->
+  <h2>Estimation in three steps</h2>
+
+  <div style="margin-top:1rem;">
+    <div class="step-row">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <h4>Train two velocity networks on trajectory samples</h4>
+        <p>One FNO network \(v^A_\theta\) on sampled trajectories from method A,
+        one \(v^B_\theta\) from method B. The training loss is the FFM objective:
+        \(\mathbb{E}\|\hat{v}_\theta(x_t, t) - (x_1 - x_0)\|^2\) over
+        interpolated samples. In practice the loss is a mixture
+        \(w\,\mathcal{L}_\text{FFM} + (1-w)\,\mathcal{L}_\text{FKL}\)
+        with \(w\) decayed from 1 to 0 during training, which jointly
+        optimises generation quality and KL accuracy.</p>
+      </div>
+    </div>
+    <div class="step-row">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <h4>Sample interpolated trajectory points</h4>
+        <p>Draw \(x_1 \sim \nu^A\), \(x_0 \sim \mathcal{N}(0,C)\),
+        \(t \sim p(t)\) (importance-sampled to handle the \(t/(1-t)\) divergence).
+        Form \(x_t = t\,x_1 + (1-t)\,x_0 \sim \mu_t^A\).</p>
+      </div>
+    </div>
+    <div class="step-row">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <h4>Average the integrand over samples</h4>
+        <p>Evaluate \(\tfrac{t}{1-t}\,\|v^A_\theta(x_t,t) - v^B_\theta(x_t,t)\|^2_{C^{1/2}H}\)
+        and average. Both networks are evaluated at the same interpolated point \(x_t\).
+        No ODE integration is required.</p>
+      </div>
+    </div>
+  </div>
+
+  <div style="margin-top:2.5rem; display:flex; gap:12px; flex-wrap:wrap;">
+    <a href="index.html" style="
+      display:inline-block; font-size:14px; font-weight:500;
+      color:var(--text2); border:0.5px solid var(--border2);
+      padding:8px 20px; border-radius:6px; text-decoration:none;">← Motivation</a>
+    <a href="results.html" style="
+      display:inline-block; font-size:14px; font-weight:500;
+      color:var(--accent); border:0.5px solid var(--accent);
+      padding:8px 20px; border-radius:6px; text-decoration:none;">Results →</a>
+  </div>
+
+</div>
+
+<footer>
+  Based on <em>Relative Entropy Estimation in Function Space</em> · Anonymous Authors · ICML submission
+</footer>
+
+<script>
+(function () {
+  const dark = () => window.matchMedia('(prefers-color-scheme:dark)').matches;
+  const bgc  = () => dark() ? '#1e1d1b' : '#f7f6f3';
+  const tc   = () => dark() ? 'rgba(255,255,255,0.40)' : 'rgba(0,0,0,0.34)';
+  const tc2  = () => dark() ? 'rgba(255,255,255,0.10)' : 'rgba(0,0,0,0.07)';
+
+  /* ── Gaussian singularity diagrams ── */
+  function drawGaussianDiagram(cvId, mode) {
+    const cv = document.getElementById(cvId); if (!cv) return;
+    const ctx = cv.getContext('2d');
+    function draw() {
+      const W = cv.parentElement.clientWidth;
+      cv.width = W; cv.height = 130; cv.style.height = '130px';
+      ctx.clearRect(0,0,W,130); ctx.fillStyle=bgc(); ctx.fillRect(0,0,W,130);
+      const cx=W/2, cy=65;
+      function bell(mx, col, alpha) {
+        const hw=W*0.2, peak=48;
+        ctx.save(); ctx.beginPath();
+        ctx.moveTo(mx-hw, cy+12);
+        ctx.bezierCurveTo(mx-hw*0.5,cy+12, mx-hw*0.3,cy-peak, mx,cy-peak);
+        ctx.bezierCurveTo(mx+hw*0.3,cy-peak, mx+hw*0.5,cy+12, mx+hw,cy+12);
+        ctx.closePath(); ctx.fillStyle=col; ctx.globalAlpha=alpha; ctx.fill();
+        ctx.globalAlpha=1; ctx.strokeStyle=col; ctx.lineWidth=1.5; ctx.stroke();
+        ctx.restore();
+      }
+      if (mode==='finite') {
+        bell(cx-W*0.12, '#1D9E75', 0.22); bell(cx+W*0.12, '#534AB7', 0.22);
+        ctx.save(); ctx.font='11px -apple-system,sans-serif'; ctx.fillStyle=tc(); ctx.textAlign='center';
+        ctx.fillText('overlapping support → KL finite', cx, cy+28); ctx.restore();
+      } else {
+        bell(cx-W*0.22, '#1D9E75', 0.20); bell(cx+W*0.22, '#D4537E', 0.20);
+        ctx.save(); ctx.strokeStyle='#D4537E'; ctx.lineWidth=1; ctx.setLineDash([3,3]);
+        ctx.beginPath(); ctx.moveTo(cx-W*0.04,cy-8); ctx.lineTo(cx+W*0.04,cy-8); ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.font='11px -apple-system,sans-serif'; ctx.fillStyle='#D4537E'; ctx.textAlign='center';
+        ctx.fillText('disjoint support → KL = +∞', cx, cy+28); ctx.restore();
+      }
+      ctx.save(); ctx.strokeStyle=tc2(); ctx.lineWidth=0.5;
+      ctx.beginPath(); ctx.moveTo(20,cy+12); ctx.lineTo(W-20,cy+12); ctx.stroke(); ctx.restore();
+    }
+    draw();
+    window.addEventListener('resize', draw);
+    window.matchMedia('(prefers-color-scheme:dark)').addEventListener('change', draw);
+  }
+  drawGaussianDiagram('ms-finite',   'finite');
+  drawGaussianDiagram('ms-infinite', 'infinite');
+
+  /* ── FFM interpolation animation ── */
+  (function(){
+    const cv=document.getElementById('ffm-cv'); if(!cv) return;
+    const ctx=cv.getContext('2d');
+    const slider=document.getElementById('ffm-slider');
+    const valEl=document.getElementById('ffm-val');
+    const togA=document.getElementById('tog-A');
+    const togB=document.getElementById('tog-B');
+    let showA=true, showB=true;
+
+    /* deterministic PRNG */
+    function mulberry32(a){ return function(){ a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296; }; }
+    const rng=mulberry32(42);
+
+    const N_TRAJ=7, N_STEPS=80;
+
+    function makeNoiseCurve(rng){
+      const phases=Array.from({length:6},()=>rng()*Math.PI*2);
+      const amps=Array.from({length:6},(_, k)=>0.28/(k+1)*(rng()-0.5)*2);
+      return s=>0.5+amps.reduce((a,c,k)=>a+c*Math.cos((k+1)*s*Math.PI*2+phases[k]),0);
+    }
+    function makeTargetA(rng){
+      const off=(rng()-0.5)*0.12;
+      return s=>0.34+off+0.18*Math.sin(s*Math.PI);
+    }
+    function makeTargetB(rng){
+      const ph=rng()*Math.PI;
+      return s=>0.5+0.22*Math.sin(s*Math.PI*3+ph);
+    }
+
+    const noise=Array.from({length:N_TRAJ},()=>makeNoiseCurve(rng));
+    const targetA=Array.from({length:N_TRAJ},()=>makeTargetA(rng));
+    const targetB=Array.from({length:N_TRAJ},()=>makeTargetB(rng));
+
+    function setup(){ const W=cv.parentElement.clientWidth; cv.width=W; cv.height=200; cv.style.height='200px'; }
+
+    function draw(){
+      const W=cv.width, H=cv.height;
+      const t=slider.value/100;
+      valEl.textContent=t.toFixed(2);
+      ctx.clearRect(0,0,W,H); ctx.fillStyle=bgc(); ctx.fillRect(0,0,W,H);
+      const PAD=24;
+
+      for(let i=0;i<N_TRAJ;i++){
+        if(showA){
+          ctx.save(); ctx.beginPath(); ctx.strokeStyle='#7F77DD'; ctx.lineWidth=1.5; ctx.globalAlpha=0.52;
+          for(let j=0;j<=N_STEPS;j++){
+            const s=j/N_STEPS, x=PAD+s*(W-2*PAD);
+            const y=H*((1-t)*noise[i](s)+t*targetA[i](s));
+            j===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+          }
+          ctx.stroke(); ctx.restore();
+        }
+        if(showB){
+          ctx.save(); ctx.beginPath(); ctx.strokeStyle='#EF9F27'; ctx.lineWidth=1.5; ctx.globalAlpha=0.52;
+          for(let j=0;j<=N_STEPS;j++){
+            const s=j/N_STEPS, x=PAD+s*(W-2*PAD);
+            const y=H*((1-t)*noise[i](s)+t*targetB[i](s));
+            j===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+          }
+          ctx.stroke(); ctx.restore();
+        }
+      }
+
+      /* label */
+      ctx.save(); ctx.font='11px -apple-system,sans-serif'; ctx.fillStyle=tc();
+      if(t<0.03){
+        ctx.textAlign='center';
+        ctx.fillText('t = 0  →  identical noise for both methods', W/2, 16);
+      } else if(t>0.92){
+        ctx.textAlign='center';
+        ctx.fillText('t = 1  →  trajectory distributions diverge', W/2, 16);
+      }
+      ctx.restore();
+    }
+
+    slider.addEventListener('input', draw);
+    togA.addEventListener('click',function(){ showA=!showA; this.classList.toggle('on',showA); draw(); });
+    togB.addEventListener('click',function(){ showB=!showB; this.classList.toggle('on',showB); draw(); });
+    window.addEventListener('resize',()=>{ setup(); draw(); });
+    window.matchMedia('(prefers-color-scheme:dark)').addEventListener('change', draw);
+    setup(); draw();
+  })();
+})();
+</script>
+
+</body>
+</html>
