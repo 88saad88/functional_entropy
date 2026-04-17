@@ -132,11 +132,11 @@ function snapPt(t){ return { x: PAD + t*(W-2*PAD), y: H*spine(t) }; }
 
 const PATHS = [
   { col:'#1D9E75', dash:[], label:'Path 1',
-    fn:(t)=>{ return spine(t) - 0.18*Math.sin(t*Math.PI)*Math.sin(t*Math.PI*2); }},
+    fn:(t)=>{ return spine(t) + 0.15 * Math.sin(t * 4 * Math.PI); }},
   { col:'#7F77DD', dash:[], label:'Path 2',
-    fn:(t)=>{ return spine(t) + 0.20*Math.sin(t*Math.PI)*Math.cos(t*Math.PI*1.5+0.8); }},
+    fn:(t)=>{ return spine(t) - 0.12 * Math.sin(t * 4 * Math.PI); }},
   { col:'#EF9F27', dash:[6,3], label:'Path 3',
-    fn:(t)=>{ const d=0.25*(t<0.5?Math.sin(t*Math.PI*2):-Math.sin((t-0.5)*Math.PI*2)); return spine(t)+d; }},
+    fn:(t)=>{ return spine(t) - 0.20 * Math.sin(t * 4 * Math.PI) * Math.cos(t * 2 * Math.PI); }},
 ];
 
 function drawPath(p, alpha){
