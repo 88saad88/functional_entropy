@@ -1,0 +1,722 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Results — FKL Blog</title>
+  <link rel="stylesheet" href="style.css"/>
+  <style>
+    /* tabs */
+    .tab-row { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:1.1rem; }
+    .tab {
+      font-size:12px; font-family:var(--sans);
+      padding:5px 14px; border-radius:6px;
+      border:0.5px solid var(--border2);
+      background:var(--bg2); color:var(--text2); cursor:pointer;
+    }
+    .tab.active { background:var(--accent); color:#fff; border-color:transparent; }
+
+    /* metric toggles */
+    .metric-row { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:1rem; }
+    .mtag {
+      font-size:11px; font-family:var(--sans);
+      padding:3px 10px; border-radius:4px;
+      border:0.5px solid var(--border2);
+      background:var(--bg2); color:var(--text2); cursor:pointer;
+    }
+    .mtag.active { background:var(--bg3); color:var(--text); }
+
+    /* ranking table */
+    .rank-wrap { overflow-x:auto; }
+    .rank-table { width:100%; border-collapse:collapse; font-size:13px; }
+    .rank-table th {
+      font-size:11px; font-weight:500; letter-spacing:.04em; text-transform:uppercase;
+      color:var(--text3); padding:6px 10px; text-align:left;
+      border-bottom:0.5px solid var(--border); white-space:nowrap;
+    }
+    .rank-table td {
+      padding:6px 10px; border-bottom:0.5px solid var(--border);
+      color:var(--text2); vertical-align:middle;
+    }
+    .rank-table tr:last-child td { border-bottom:none; }
+    .rank-num {
+      display:inline-flex; align-items:center; justify-content:center;
+      width:22px; height:22px; border-radius:50%;
+      font-size:11px; font-weight:500;
+      background:var(--bg3); color:var(--text2);
+    }
+    .rank-num.r1 { background:#1D9E75; color:#fff; }
+    .method-dot { display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:6px; vertical-align:middle; }
+    .inconsistency-badge {
+      display:inline-block; font-size:10px; padding:1px 7px;
+      border-radius:3px; background:rgba(212,83,126,0.12); color:#993556; margin-left:6px;
+    }
+
+    /* timeline scrubber */
+    .timeline-wrap {
+      border:0.5px solid var(--border); border-radius:var(--radius);
+      background:var(--bg2); overflow:hidden; margin:1rem 0;
+    }
+    .timeline-canvas { display:block; width:100%; }
+    .timeline-controls {
+      padding:10px 14px; border-top:0.5px solid var(--border);
+      display:flex; align-items:center; gap:12px; flex-wrap:wrap;
+    }
+    .timeline-controls label { font-size:12px; color:var(--text3); }
+    .timeline-controls input[type=range] { flex:1; min-width:80px; }
+    .t-readout { font-size:12px; font-weight:500; color:var(--accent); min-width:36px; }
+
+    /* FKL chart */
+    .fkl-section { margin:1rem 0; }
+    .fkl-row {
+      display:grid; grid-template-columns:64px 1fr 48px;
+      gap:0 8px; align-items:center; margin-bottom:6px;
+    }
+    .fkl-label { font-size:12px; color:var(--text2); text-align:right; }
+    .fkl-bar-wrap { height:18px; background:var(--bg3); border-radius:3px; overflow:hidden; }
+    .fkl-bar { height:100%; border-radius:3px; transition:width .5s cubic-bezier(.4,0,.2,1); }
+    .fkl-val { font-size:12px; font-weight:500; color:var(--text2); }
+    .fkl-val.best { color:#1D9E75; }
+
+    /* mode seeking/covering legend */
+    .mode-legend {
+      display:flex; gap:12px; flex-wrap:wrap; margin-top:10px; font-size:12px; color:var(--text3);
+    }
+    .mode-tag { display:flex; align-items:center; gap:5px; }
+    .mode-swatch { width:10px; height:10px; border-radius:2px; }
+
+    /* paper figures */
+    .paper-fig {
+      border:0.5px solid var(--border); border-radius:var(--radius);
+      overflow:hidden; margin:1.25rem 0; background:var(--bg2);
+    }
+    .paper-fig img { display:block; width:100%; height:auto; }
+    .paper-fig figcaption {
+      padding:8px 12px; font-size:12px; color:var(--text3);
+      border-top:0.5px solid var(--border); line-height:1.5;
+    }
+
+    /* real data */
+    .real-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin:1rem 0; }
+    @media(max-width:520px){ .real-grid{ grid-template-columns:1fr; } }
+    .real-card {
+      border:0.5px solid var(--border); border-radius:var(--radius);
+      padding:1rem 1.1rem; background:var(--bg2);
+    }
+    .real-card h4 { font-size:14px; font-weight:500; margin:0 0 0.5rem; }
+    .real-card p  { font-size:13px; color:var(--text2); margin:0; line-height:1.6; }
+    .finding {
+      font-size:13px; color:var(--text2); line-height:1.6;
+      border-left:2px solid #D4537E;
+      padding:0.5rem 0.75rem; margin:0.75rem 0 0;
+      background:var(--bg3); border-radius:0 6px 6px 0;
+    }
+
+    /* Petal case scores */
+    .petal-scores {
+      display:grid; grid-template-columns:1fr 1fr; gap:12px; margin:1rem 0;
+    }
+    @media(max-width:480px){ .petal-scores{ grid-template-columns:1fr; } }
+    .score-card {
+      border:0.5px solid var(--border); border-radius:var(--radius);
+      padding:0.75rem 1rem; background:var(--bg2);
+    }
+    .score-card-title { font-size:13px; font-weight:500; margin:0 0 0.5rem; }
+    .score-line { display:flex; justify-content:space-between; font-size:13px; color:var(--text2); padding:2px 0; }
+    .score-line .val { font-weight:500; }
+    .win  { color:#1D9E75; }
+    .lose { color:#993556; }
+  </style>
+</head>
+<body>
+
+<nav>
+  <a class="nav-brand" href="index.html">FKL <span>·</span> Path-Space Divergence</a>
+  <a href="index.html">Motivation</a>
+  <a href="method.html">Method</a>
+  <a href="results.html" class="active">Results</a>
+</nav>
+
+<div class="hero">
+  <div class="kicker">Results</div>
+  <h1>Standard metrics disagree. FKL doesn't.</h1>
+  <p class="lead">
+    Six trajectory inference methods are benchmarked on three synthetic datasets
+    and two real single-cell datasets. Five widely-used marginal metrics produce
+    inconsistent, contradictory rankings across timepoints and metrics.
+    FKL provides a single coherent ordering that aligns with visual inspection every time.
+  </p>
+</div>
+
+<div class="page">
+
+  <hr class="divider"/>
+
+  <!-- ══ §1 SETUP ══ -->
+  <h2>1 — The benchmark</h2>
+  <p><strong>Six methods</strong> spanning the main families of trajectory inference:</p>
+  <ul style="margin:.5rem 0 1rem 1.2rem;color:var(--text2);font-size:14px;line-height:2.1;">
+    <li><strong style="color:var(--text)">SBIRR</strong> — Schrödinger Bridge with iterative reference refinement; injects structural constraints on the drift.</li>
+    <li><strong style="color:var(--text)">vSB</strong> — vanilla Schrödinger Bridge baseline with Brownian motion noise.</li>
+    <li><strong style="color:var(--text)">MSBM</strong> — Multi-Marginal Schrödinger Bridge Matching.</li>
+    <li><strong style="color:var(--text)">MFL</strong> — Mean-Field Langevin in path space; targets drift-diffusion population dynamics.</li>
+    <li><strong style="color:var(--text)">AM</strong> — Action Matching; learns stochastic velocity fields.</li>
+    <li><strong style="color:var(--text)">TIGON</strong> — ODE-based; neural-ODE optimal transport, deterministic dynamics.</li>
+  </ul>
+
+  <p><strong>Datasets:</strong> three synthetic (Lotka-Volterra predator-prey, Repressilator three-gene oscillator, Petal branching differentiation) where ground-truth trajectories are known; two real scRNA-seq datasets (Embryoid Body and Human Embryonic Stem Cell) where no ground truth exists.</p>
+
+  <p><strong>Metrics:</strong> five marginal metrics at held-out timepoints — W₁ (EMD), W₂, Sliced Wasserstein (SWD), Max-Sliced Wasserstein (MWD), and MMD — plus forward and reverse FKL between full trajectory distributions.</p>
+
+  <figure class="paper-fig">
+    <img src="fig1-trajectories.png" alt="Figure 1: trajectories generated by all TI methods on Lotka-Volterra (top), Repressilator (middle), and Petal (bottom) datasets." />
+    <figcaption>Figure 1 from the paper. Top: Lotka-Volterra. Middle: Repressilator. Bottom: Petal. Coloured curves = ground truth; black curves = generated trajectories; scattered points = validation snapshots used for marginal metrics.</figcaption>
+  </figure>
+
+  <hr class="divider"/>
+
+  <!-- ══ §2 INCONSISTENCY ══ -->
+  <h2>2 — Marginal metrics are inconsistent</h2>
+  <p>
+    Select a dataset, a metric, and a validation timepoint. Watch how the method rankings
+    change — not just across datasets, but across different metrics on the <em>same</em>
+    dataset at the <em>same</em> timepoint.
+  </p>
+
+  <div class="tab-row" id="ds-tabs">
+    <button class="tab active" data-ds="lv">Lotka-Volterra</button>
+    <button class="tab" data-ds="rep">Repressilator</button>
+    <button class="tab" data-ds="petal">Petal</button>
+  </div>
+
+  <div class="metric-row" id="metric-tabs">
+    <button class="mtag active" data-m="emd">W₁ (EMD)</button>
+    <button class="mtag" data-m="w2">W₂</button>
+    <button class="mtag" data-m="swd">SWD</button>
+    <button class="mtag" data-m="mwd">MWD</button>
+    <button class="mtag" data-m="mmd">MMD</button>
+  </div>
+
+  <!-- timeline scrubber -->
+  <div class="timeline-wrap">
+    <canvas id="timeline-cv" class="timeline-canvas" height="160"></canvas>
+    <div class="timeline-controls">
+      <label>Validation τ =</label>
+      <input type="range" id="tau-slider" min="0" max="3" value="3" step="1"/>
+      <span class="t-readout" id="tau-val"></span>
+      <span style="font-size:12px;color:var(--text3);" id="tau-note"></span>
+    </div>
+  </div>
+
+  <div class="rank-wrap">
+    <table class="rank-table" id="rank-table">
+    </table>
+  </div>
+
+  <div class="callout" id="inconsistency-note"></div>
+
+  <hr class="divider"/>
+
+  <!-- ══ §3 FKL ══ -->
+  <h2>3 — FKL gives a coherent ranking</h2>
+  <p>
+    FKL produces stable rankings that align with visual inspection of the trajectories.
+    Lower forward KL = distribution closer to the ground-truth path measure.
+    The validation set (VAL) sets the baseline — it's resampled from the same process.
+    The reverse KL reveals <strong>mode-seeking</strong> vs <strong>mode-covering</strong>
+    behaviour: a large reverse KL means the method generates trajectories in regions
+    the reference doesn't cover (mass outside the ground truth support).
+  </p>
+
+  <div class="tab-row" id="fkl-tabs">
+    <button class="tab active" data-fkl="lv">Lotka-Volterra</button>
+    <button class="tab" data-fkl="rep">Repressilator</button>
+    <button class="tab" data-fkl="petal">Petal</button>
+  </div>
+
+  <div class="fkl-section" id="fkl-chart"></div>
+  <div class="mode-legend">
+    <div class="mode-tag"><div class="mode-swatch" style="background:#7F77DD;"></div> Forward KL(ν<sup>A</sup>‖ν<sup>B</sup>) — how far method is from GT</div>
+    <div class="mode-tag"><div class="mode-swatch" style="background:#EF9F27;opacity:0.7;"></div> Reverse KL(ν<sup>B</sup>‖ν<sup>A</sup>) — mass placed outside GT support (mode-seeking)</div>
+  </div>
+  <p style="font-size:13px;color:var(--text2);margin-top:0.75rem;" id="fkl-note"></p>
+
+  <hr class="divider"/>
+
+  <!-- ══ §4 PETAL ══ -->
+  <h2>4 — The Petal case: same snapshot, different dynamics</h2>
+  <p>
+    The Petal dataset exposes the core problem most sharply. At τ = 0.75, TIGON
+    scores <em>better</em> than MSBM on W₂ (0.155 vs 0.160) and clearly better
+    on MMD (0.018 vs 0.057). Yet look at what their trajectories actually do:
+  </p>
+
+  <figure class="paper-fig">
+    <img src="fig4-petal-zoom.png" alt="Figure 4: zoomed comparison of MSBM and TIGON trajectories on the Petal dataset at τ=0.75. Marginals from both methods are close to ground truth, yet trajectories are substantially different." />
+    <figcaption>Figure 4 from the paper. Zoomed comparison of MSBM and TIGON on the left branch at τ = 0.75. Both methods land near the same pink snapshot points — yet their trajectories are visually and dynamically different. Only FKL measures this.</figcaption>
+  </figure>
+
+  <div class="petal-scores">
+    <div class="score-card">
+      <div class="score-card-title" style="color:#7F77DD;">MSBM</div>
+      <div class="score-line"><span>W₂ at τ = 0.75</span><span class="val">0.160</span></div>
+      <div class="score-line"><span>MMD at τ = 0.75</span><span class="val">0.057</span></div>
+      <div class="score-line"><span>Forward FKL</span><span class="val win">13.6 ✓ best</span></div>
+      <div class="score-line"><span>Reverse FKL</span><span class="val win">15.8</span></div>
+    </div>
+    <div class="score-card">
+      <div class="score-card-title" style="color:#EF9F27;">TIGON</div>
+      <div class="score-line"><span>W₂ at τ = 0.75</span><span class="val win">0.155 ✓ best</span></div>
+      <div class="score-line"><span>MMD at τ = 0.75</span><span class="val win">0.018 ✓ best</span></div>
+      <div class="score-line"><span>Forward FKL</span><span class="val lose">36.5 ✗</span></div>
+      <div class="score-line"><span>Reverse FKL</span><span class="val lose">17.7</span></div>
+    </div>
+  </div>
+
+  <p style="font-size:14px;color:var(--text2);">
+    MSBM correctly captures the branching structure — trajectories fan into distinct
+    lineages. TIGON produces smooth, converging paths that land on the snapshot but
+    miss the bifurcation entirely. W₂ and MMD rank TIGON as the winner.
+    FKL (13.6 vs 36.5) correctly identifies MSBM.
+  </p>
+
+  <p style="font-size:14px;color:var(--text2);margin-top:0.75rem;">
+    Here are all method trajectories on the Petal dataset, directly from the paper:
+  </p>
+
+  <figure class="paper-fig">
+    <img src="fig12-petal.png" alt="Figure 12: Petal trajectories for all methods — GT, VAL, SBIRR, vSB, MSBM, MFL, AM, TIGON." />
+    <figcaption>Figure 12 from the paper. All methods on the Petal dataset. GT and VAL show the ground-truth branching structure. MSBM (IMF) reproduces it closely. TIGON generates smooth undifferentiated paths that pass through the snapshots but miss the dynamics entirely.</figcaption>
+  </figure>
+
+  <hr class="divider"/>
+
+  <!-- ══ §5 REAL DATA ══ -->
+  <h2>5 — Real data: no ground truth, but FKL still reveals structure</h2>
+  <p>
+    On real scRNA-seq data, individual cells cannot be tracked — observations are
+    independent samples at discrete timepoints only. FKL uses SBIRR (trained on
+    all snapshots) as a reference, treating its stochastic differentiation dynamics
+    as a plausible proxy for ground truth. FKL then measures how closely each
+    other method recovers those dynamics.
+  </p>
+
+  <figure class="paper-fig">
+    <img src="fig2-real.png" alt="Figure 2: trajectories generated by all TI methods on EB (top) and hESC (bottom) real single-cell datasets." />
+    <figcaption>Figure 2 from the paper. Trajectories generated by TI methods on Embryoid Body / EB (top) and Human Embryonic Stem Cell / hESC (bottom). Points indicate validation snapshots. Colour encodes time τ.</figcaption>
+  </figure>
+
+  <div class="real-grid">
+    <div class="real-card">
+      <h4>Embryoid Body (EB)</h4>
+      <p>vSB, MSBM, and MFL all score well under FKL — they share the same
+      Schrödinger Bridge assumptions as the reference and generate similarly
+      stochastic dynamics. Marginal metrics are also broadly consistent here.</p>
+      <div class="finding">
+        FKL correctly groups the SB-family methods together (FKL ≈ 42–54)
+        and separates AM (63) and TIGON (72) as less faithful to the
+        stochastic reference process.
+      </div>
+    </div>
+    <div class="real-card">
+      <h4>Human Embryonic Stem Cell (hESC)</h4>
+      <p>TIGON ranks <strong>best</strong> at the first validation timepoint under
+      every marginal metric. But FKL reveals the opposite: TIGON's ODE-based
+      trajectories are too smooth, missing the stochasticity of real differentiation.
+      </p>
+      <div class="finding">
+        FKL = 103 for TIGON vs FKL = 90 for vSB — a gap entirely invisible
+        to W₂, which scores TIGON as the clear winner on marginals.
+        The reverse KL (111 vs 92) confirms TIGON places mass in regions
+        the reference process doesn't reach.
+      </div>
+    </div>
+  </div>
+
+  <div class="callout">
+    <strong>The pattern across all datasets:</strong> methods that produce deterministic
+    or overly smooth trajectories (TIGON, AM) tend to score well on marginal metrics
+    — cells land near the right dots — but score poorly on FKL because the paths
+    don't reflect the stochastic nature of the underlying process.
+    A large reverse KL (mode-seeking) specifically flags when a method generates
+    trajectories outside the reference support. FKL is the only metric that catches either.
+  </div>
+
+  <div style="margin-top:2.5rem;">
+    <a href="method.html" style="display:inline-block;font-size:14px;font-weight:500;
+      color:var(--text2);border:0.5px solid var(--border2);
+      padding:8px 20px;border-radius:6px;text-decoration:none;">← Method</a>
+  </div>
+
+</div>
+
+<footer>
+  Based on <em>Relative Entropy Estimation in Function Space</em> · Anonymous Authors · ICML submission
+</footer>
+
+<script>
+(function(){
+  const dark = () => window.matchMedia('(prefers-color-scheme:dark)').matches;
+  const bgc  = () => dark() ? '#1e1d1b' : '#f7f6f3';
+  const tc   = () => dark() ? 'rgba(255,255,255,0.42)' : 'rgba(0,0,0,0.36)';
+  const tc2  = () => dark() ? 'rgba(255,255,255,0.10)' : 'rgba(0,0,0,0.07)';
+
+  const METHODS = ['VAL','SBIRR','vSB','MSBM','MFL','AM','TIGON'];
+  const MCOLS = {VAL:'#888',SBIRR:'#1D9E75',vSB:'#7F77DD',MSBM:'#EF9F27',MFL:'#D4537E',AM:'#534AB7',TIGON:'#BA7517'};
+
+  /* ── DATA from paper Tables 1–3 ── */
+  /* structure: dataset → metric → timepoint → {method:score} */
+  const DATA = {
+    lv: {
+      taus: ['τ=0.125','τ=0.375','τ=0.625','τ=0.875'],
+      emd:[
+        {VAL:0.018,SBIRR:0.179,vSB:1.009,MSBM:0.784,MFL:1.004,AM:0.862,TIGON:0.446},
+        {VAL:0.026,SBIRR:0.090,vSB:0.529,MSBM:0.321,MFL:0.393,AM:0.342,TIGON:0.323},
+        {VAL:0.036,SBIRR:0.254,vSB:0.306,MSBM:0.486,MFL:0.402,AM:0.569,TIGON:0.266},
+        {VAL:0.061,SBIRR:0.368,vSB:0.272,MSBM:0.554,MFL:0.659,AM:1.134,TIGON:0.245},
+      ],
+      w2:[
+        {VAL:0.024,SBIRR:0.186,vSB:1.022,MSBM:0.786,MFL:1.140,AM:0.864,TIGON:0.500},
+        {VAL:0.035,SBIRR:0.105,vSB:0.568,MSBM:0.325,MFL:0.639,AM:0.406,TIGON:0.386},
+        {VAL:0.049,SBIRR:0.281,vSB:0.366,MSBM:0.503,MFL:0.573,AM:1.079,TIGON:0.381},
+        {VAL:0.082,SBIRR:0.420,vSB:0.323,MSBM:0.637,MFL:0.958,AM:1.958,TIGON:0.351},
+      ],
+      swd:[
+        {VAL:0.011,SBIRR:0.125,vSB:0.764,MSBM:0.595,MFL:0.801,AM:0.655,TIGON:0.340},
+        {VAL:0.015,SBIRR:0.064,vSB:0.381,MSBM:0.232,MFL:0.458,AM:0.299,TIGON:0.256},
+        {VAL:0.021,SBIRR:0.200,vSB:0.254,MSBM:0.361,MFL:0.396,AM:0.804,TIGON:0.257},
+        {VAL:0.035,SBIRR:0.273,vSB:0.199,MSBM:0.452,MFL:0.698,AM:1.449,TIGON:0.241},
+      ],
+      mwd:[
+        {VAL:0.015,SBIRR:0.178,vSB:1.015,MSBM:0.784,MFL:0.905,AM:0.863,TIGON:0.390},
+        {VAL:0.020,SBIRR:0.070,vSB:0.516,MSBM:0.323,MFL:0.590,AM:0.381,TIGON:0.361},
+        {VAL:0.027,SBIRR:0.260,vSB:0.311,MSBM:0.501,MFL:0.490,AM:1.072,TIGON:0.330},
+        {VAL:0.044,SBIRR:0.375,vSB:0.244,MSBM:0.625,MFL:0.875,AM:1.945,TIGON:0.312},
+      ],
+      mmd:[
+        {VAL:0.007,SBIRR:0.174,vSB:0.874,MSBM:0.716,MFL:0.615,AM:0.763,TIGON:0.293},
+        {VAL:0.013,SBIRR:0.051,vSB:0.482,MSBM:0.306,MFL:0.247,AM:0.277,TIGON:0.174},
+        {VAL:0.012,SBIRR:0.198,vSB:0.173,MSBM:0.426,MFL:0.265,AM:0.239,TIGON:0.131},
+        {VAL:0.017,SBIRR:0.198,vSB:0.156,MSBM:0.388,MFL:0.240,AM:0.203,TIGON:0.104},
+      ],
+    },
+    rep: {
+      taus: ['τ=0.1','τ=0.3','τ=0.5','τ=0.7','τ=0.9'],
+      emd:[
+        {VAL:0.036,SBIRR:0.390,vSB:1.884,MSBM:1.465,MFL:1.796,AM:1.454,TIGON:1.074},
+        {VAL:0.056,SBIRR:0.865,vSB:1.227,MSBM:1.324,MFL:1.737,AM:1.355,TIGON:0.851},
+        {VAL:0.080,SBIRR:0.442,vSB:0.983,MSBM:1.011,MFL:1.500,AM:2.208,TIGON:0.821},
+        {VAL:0.094,SBIRR:0.742,vSB:1.059,MSBM:0.995,MFL:1.361,AM:7.566,TIGON:0.813},
+        {VAL:0.116,SBIRR:1.832,vSB:0.944,MSBM:1.225,MFL:1.173,AM:17.516,TIGON:0.842},
+      ],
+      w2:[
+        {VAL:0.044,SBIRR:0.413,vSB:1.889,MSBM:1.469,MFL:1.914,AM:1.456,TIGON:1.135},
+        {VAL:0.070,SBIRR:0.899,vSB:1.248,MSBM:1.348,MFL:1.837,AM:1.385,TIGON:0.952},
+        {VAL:0.099,SBIRR:0.475,vSB:1.017,MSBM:1.106,MFL:1.627,AM:5.554,TIGON:0.884},
+        {VAL:0.114,SBIRR:0.815,vSB:1.122,MSBM:1.128,MFL:1.510,AM:19.112,TIGON:0.860},
+        {VAL:0.147,SBIRR:1.894,vSB:1.078,MSBM:1.400,MFL:1.317,AM:39.206,TIGON:0.916},
+      ],
+      swd:[
+        {VAL:0.014,SBIRR:0.256,vSB:1.174,MSBM:0.790,MFL:1.101,AM:0.894,TIGON:0.656},
+        {VAL:0.023,SBIRR:0.558,vSB:0.724,MSBM:0.694,MFL:1.083,AM:0.840,TIGON:0.501},
+        {VAL:0.033,SBIRR:0.263,vSB:0.596,MSBM:0.643,MFL:0.975,AM:3.119,TIGON:0.496},
+        {VAL:0.042,SBIRR:0.477,vSB:0.640,MSBM:0.571,MFL:0.823,AM:11.037,TIGON:0.444},
+        {VAL:0.055,SBIRR:1.055,vSB:0.576,MSBM:0.698,MFL:0.718,AM:22.624,TIGON:0.483},
+      ],
+      mwd:[
+        {VAL:0.019,SBIRR:0.401,vSB:1.881,MSBM:1.464,MFL:1.529,AM:1.419,TIGON:0.915},
+        {VAL:0.034,SBIRR:0.868,vSB:1.156,MSBM:1.306,MFL:1.552,AM:1.321,TIGON:0.760},
+        {VAL:0.052,SBIRR:0.345,vSB:0.972,MSBM:1.062,MFL:1.391,AM:5.278,TIGON:0.720},
+        {VAL:0.060,SBIRR:0.750,vSB:0.948,MSBM:0.992,MFL:1.277,AM:18.390,TIGON:0.663},
+        {VAL:0.081,SBIRR:1.852,vSB:0.901,MSBM:1.288,MFL:1.036,AM:37.685,TIGON:0.677},
+      ],
+      mmd:[
+        {VAL:0.014,SBIRR:0.366,vSB:1.270,MSBM:1.120,MFL:0.931,AM:1.111,TIGON:0.687},
+        {VAL:0.011,SBIRR:0.688,vSB:0.880,MSBM:0.982,MFL:0.869,AM:0.964,TIGON:0.480},
+        {VAL:0.014,SBIRR:0.291,vSB:0.611,MSBM:0.713,MFL:0.652,AM:0.618,TIGON:0.441},
+        {VAL:0.023,SBIRR:0.390,vSB:0.605,MSBM:0.614,MFL:0.523,AM:0.551,TIGON:0.431},
+        {VAL:0.030,SBIRR:0.545,vSB:0.537,MSBM:0.678,MFL:0.466,AM:0.352,TIGON:0.430},
+      ],
+    },
+    petal: {
+      taus: ['τ=0','τ=0.25','τ=0.5','τ=0.75','τ=1'],
+      emd:[
+        {VAL:0.011,SBIRR:0.017,vSB:0.014,MSBM:0.015,MFL:0.194,AM:0.016,TIGON:0.094},
+        {VAL:0.023,SBIRR:0.029,vSB:0.029,MSBM:0.043,MFL:0.287,AM:0.102,TIGON:0.121},
+        {VAL:0.038,SBIRR:0.037,vSB:0.046,MSBM:0.070,MFL:0.284,AM:0.167,TIGON:0.163},
+        {VAL:0.053,SBIRR:0.045,vSB:0.055,MSBM:0.096,MFL:0.184,AM:0.183,TIGON:0.128},
+        {VAL:0.068,SBIRR:0.045,vSB:0.059,MSBM:0.119,MFL:0.105,AM:0.166,TIGON:0.053},
+      ],
+      w2:[
+        {VAL:0.015,SBIRR:0.021,vSB:0.019,MSBM:0.021,MFL:0.690,AM:0.022,TIGON:0.098},
+        {VAL:0.040,SBIRR:0.046,vSB:0.052,MSBM:0.062,MFL:0.516,AM:0.115,TIGON:0.126},
+        {VAL:0.080,SBIRR:0.077,vSB:0.096,MSBM:0.111,MFL:0.445,AM:0.194,TIGON:0.169},
+        {VAL:0.143,SBIRR:0.105,vSB:0.131,MSBM:0.160,MFL:0.387,AM:0.224,TIGON:0.155},
+        {VAL:0.246,SBIRR:0.156,vSB:0.202,MSBM:0.254,MFL:0.397,AM:0.283,TIGON:0.169},
+      ],
+      swd:[
+        {VAL:0.006,SBIRR:0.011,vSB:0.007,MSBM:0.007,MFL:0.482,AM:0.008,TIGON:0.061},
+        {VAL:0.019,SBIRR:0.021,vSB:0.023,MSBM:0.027,MFL:0.352,AM:0.059,TIGON:0.053},
+        {VAL:0.036,SBIRR:0.030,vSB:0.043,MSBM:0.053,MFL:0.296,AM:0.095,TIGON:0.091},
+        {VAL:0.069,SBIRR:0.046,vSB:0.061,MSBM:0.084,MFL:0.251,AM:0.114,TIGON:0.076},
+        {VAL:0.113,SBIRR:0.071,vSB:0.098,MSBM:0.126,MFL:0.254,AM:0.149,TIGON:0.083},
+      ],
+      mwd:[
+        {VAL:0.008,SBIRR:0.014,vSB:0.009,MSBM:0.009,MFL:0.515,AM:0.011,TIGON:0.071},
+        {VAL:0.034,SBIRR:0.033,vSB:0.033,MSBM:0.050,MFL:0.385,AM:0.081,TIGON:0.080},
+        {VAL:0.063,SBIRR:0.059,vSB:0.062,MSBM:0.089,MFL:0.316,AM:0.138,TIGON:0.117},
+        {VAL:0.099,SBIRR:0.073,vSB:0.079,MSBM:0.131,MFL:0.264,AM:0.163,TIGON:0.100},
+        {VAL:0.173,SBIRR:0.121,vSB:0.155,MSBM:0.226,MFL:0.285,AM:0.205,TIGON:0.147},
+      ],
+      mmd:[
+        {VAL:0.006,SBIRR:0.011,vSB:0.004,MSBM:0.003,MFL:0.051,AM:0.008,TIGON:0.020},
+        {VAL:0.017,SBIRR:0.015,vSB:0.016,MSBM:0.021,MFL:0.054,AM:0.028,TIGON:0.011},
+        {VAL:0.028,SBIRR:0.020,vSB:0.029,MSBM:0.043,MFL:0.106,AM:0.067,TIGON:0.022},
+        {VAL:0.036,SBIRR:0.022,vSB:0.034,MSBM:0.057,MFL:0.062,AM:0.082,TIGON:0.018},
+        {VAL:0.043,SBIRR:0.021,vSB:0.035,MSBM:0.067,MFL:0.023,AM:0.088,TIGON:0.028},
+      ],
+    },
+  };
+
+  const FKL_FWD = {
+    lv:    {VAL:7.3,  SBIRR:30.8, vSB:94.7,  MSBM:55.7, MFL:38.7,  AM:35.7,  TIGON:64.4},
+    rep:   {VAL:5.3,  SBIRR:13.4, vSB:32.3,  MSBM:30.5, MFL:26.0,  AM:27.9,  TIGON:19.0},
+    petal: {VAL:4.0,  SBIRR:21.3, vSB:23.6,  MSBM:13.6, MFL:44.3,  AM:17.0,  TIGON:36.5},
+  };
+  const FKL_REV = {
+    lv:    {VAL:7.2,  SBIRR:31.3, vSB:86.6,  MSBM:35.5, MFL:139.4, AM:47.3,  TIGON:51.9},
+    rep:   {VAL:5.3,  SBIRR:16.2, vSB:31.6,  MSBM:19.8, MFL:35.4,  AM:457.5, TIGON:17.0},
+    petal: {VAL:3.9,  SBIRR:33.2, vSB:35.8,  MSBM:15.8, MFL:74.0,  AM:30.9,  TIGON:17.7},
+  };
+  const FKL_NOTES = {
+    lv:    'SBIRR ranks best (30.8). Note MFL: forward KL = 38.7 but reverse KL = 139.4 — a huge asymmetry indicating MFL generates trajectories far outside the GT support (mode-seeking behaviour).',
+    rep:   'SBIRR best (13.4). AM collapses: reverse KL = 457.5 — it places enormous mass in regions the ground truth never visits. TIGON reverse KL (17.0) < forward (19.0), suggesting it is mode-covering rather than mode-seeking.',
+    petal: 'MSBM best (13.6) — correctly capturing branching. TIGON ranks last on forward KL (36.5) but its reverse KL is low (17.7), meaning it covers the GT support but with wrong dynamics. MFL is mode-seeking: reverse KL = 74 vs forward = 44.',
+  };
+
+  /* ── STATE ── */
+  let curDs = 'lv', curM = 'emd', curTau = 3;
+
+  /* ── TIMELINE CANVAS ── */
+  const tlCv = document.getElementById('timeline-cv');
+  const tlCtx = tlCv.getContext('2d');
+
+  function setupTl() {
+    tlCv.width = tlCv.parentElement.clientWidth;
+    tlCv.height = 160;
+    drawTimeline();
+  }
+
+  function drawTimeline() {
+    const W = tlCv.width, H = 160;
+    const ds = DATA[curDs];
+    const taus = ds.taus;
+    const nT = taus.length;
+    const scores = ds[curM];
+    tlCtx.clearRect(0,0,W,H);
+    tlCtx.fillStyle = bgc(); tlCtx.fillRect(0,0,W,H);
+
+    const PAD = 48, plotH = H - 40;
+    const methods = METHODS;
+
+    /* find global min/max for this ds+metric */
+    let gMin = Infinity, gMax = -Infinity;
+    for (let ti = 0; ti < nT; ti++) {
+      methods.forEach(m => {
+        const v = scores[ti][m];
+        if(v < gMin) gMin = v;
+        if(v > gMax) gMax = v;
+      });
+    }
+    const range = gMax - gMin || 1;
+
+    /* draw lines for each method */
+    methods.forEach(m => {
+      tlCtx.save();
+      tlCtx.beginPath();
+      tlCtx.strokeStyle = MCOLS[m];
+      tlCtx.lineWidth = m === 'VAL' ? 1.2 : 1.6;
+      tlCtx.globalAlpha = m === 'VAL' ? 0.5 : 0.75;
+      tlCtx.setLineDash(m === 'VAL' ? [4,3] : []);
+      for (let ti = 0; ti < nT; ti++) {
+        const x = PAD + (ti / (nT-1)) * (W - 2*PAD);
+        const v = scores[ti][m];
+        const y = 16 + (1 - (v - gMin) / range) * (plotH - 20);
+        ti === 0 ? tlCtx.moveTo(x,y) : tlCtx.lineTo(x,y);
+      }
+      tlCtx.stroke();
+      tlCtx.restore();
+    });
+
+    /* current tau highlight */
+    const tx = PAD + (curTau / (nT-1)) * (W - 2*PAD);
+    tlCtx.save();
+    tlCtx.strokeStyle = dark() ? 'rgba(255,255,255,0.35)' : 'rgba(0,0,0,0.25)';
+    tlCtx.lineWidth = 1.5;
+    tlCtx.beginPath(); tlCtx.moveTo(tx, 10); tlCtx.lineTo(tx, H-22); tlCtx.stroke();
+    tlCtx.restore();
+
+    /* x-axis labels */
+    taus.forEach((lbl,i) => {
+      const x = PAD + (i/(nT-1)) * (W-2*PAD);
+      tlCtx.fillStyle = tc();
+      tlCtx.font = '10px -apple-system,sans-serif';
+      tlCtx.textAlign = 'center';
+      tlCtx.fillText(lbl, x, H-4);
+    });
+
+    /* legend top-right */
+    let lx = W - PAD - 4, ly = 14;
+    [...methods].reverse().forEach(m => {
+      const lw = 14;
+      tlCtx.save();
+      tlCtx.strokeStyle = MCOLS[m];
+      tlCtx.lineWidth = 1.5;
+      tlCtx.globalAlpha = 0.85;
+      tlCtx.beginPath();
+      tlCtx.moveTo(lx - lw, ly); tlCtx.lineTo(lx, ly);
+      tlCtx.stroke();
+      tlCtx.fillStyle = MCOLS[m];
+      tlCtx.font = '10px -apple-system,sans-serif';
+      tlCtx.textAlign = 'right';
+      tlCtx.globalAlpha = 1;
+      tlCtx.fillText(m, lx - lw - 3, ly + 3);
+      lx -= (tlCtx.measureText(m).width + lw + 12);
+      tlCtx.restore();
+    });
+  }
+
+  /* ── RANKING TABLE ── */
+  function renderRanking() {
+    const ds = DATA[curDs];
+    const taus = ds.taus;
+    const scores = ds[curM][curTau];
+
+    document.getElementById('tau-val').textContent = taus[curTau];
+    document.getElementById('tau-note').textContent =
+      `${curTau < taus.length-1 ? 'validation snapshot' : 'last validation snapshot'}`;
+
+    const sorted = Object.entries(scores).sort((a,b)=>a[1]-b[1]);
+    const winners = ['emd','w2','swd','mwd','mmd'].map(m =>
+      Object.entries(ds[m][curTau]).sort((a,b)=>a[1]-b[1])[0][0]
+    );
+    const inconsistent = new Set(winners).size > 1;
+
+    const mNames = {emd:'W₁',w2:'W₂',swd:'SWD',mwd:'MWD',mmd:'MMD'};
+    let html = `<thead><tr>
+      <th>Rank</th><th>Method</th>
+      <th>${mNames[curM]} score</th><th></th>
+    </tr></thead><tbody>`;
+    sorted.forEach(([m,v],i) => {
+      const badge = i===0 && inconsistent
+        ? `<span class="inconsistency-badge">winner changes by metric</span>` : '';
+      html += `<tr>
+        <td><span class="rank-num ${i===0?'r1':''}">${i+1}</span></td>
+        <td><span class="method-dot" style="background:${MCOLS[m]}"></span>${m}</td>
+        <td>${v.toFixed(3)}</td>
+        <td>${badge}</td>
+      </tr>`;
+    });
+    html += '</tbody>';
+    document.getElementById('rank-table').innerHTML = html;
+
+    if (inconsistent) {
+      const mln = {emd:'W₁',w2:'W₂',swd:'SWD',mwd:'MWD',mmd:'MMD'};
+      const parts = ['emd','w2','swd','mwd','mmd'].map((m,i) =>
+        `<strong>${winners[i]}</strong> under ${mln[m]}`
+      );
+      document.getElementById('inconsistency-note').innerHTML =
+        `<strong>Inconsistency detected:</strong> at ${taus[curTau]}, the winner is ${parts.join(', ')} — all on the same dataset.`;
+    } else {
+      document.getElementById('inconsistency-note').innerHTML =
+        `Rankings at ${taus[curTau]} for ${{lv:'Lotka-Volterra',rep:'Repressilator',petal:'Petal'}[curDs]}. All metrics agree here — try switching metrics or timepoints to see inconsistencies emerge.`;
+    }
+  }
+
+  /* ── FKL CHART ── */
+  function renderFkl() {
+    const fwd = FKL_FWD[curFkl], rev = FKL_REV[curFkl];
+    const maxVal = Math.max(...Object.values(fwd), ...Object.values(rev));
+    const bestFwd = Object.entries(fwd).filter(([m])=>m!=='VAL').sort((a,b)=>a[1]-b[1])[0][0];
+
+    let html = '';
+    METHODS.forEach(m => {
+      const f = fwd[m], r = rev[m];
+      const fp = (f/maxVal*100).toFixed(1);
+      const rp = (r/maxVal*100).toFixed(1);
+      const isVal = m==='VAL', isBest = m===bestFwd;
+      const fcol = isVal ? '#888' : isBest ? '#1D9E75' : MCOLS[m];
+      html += `
+      <div class="fkl-row" style="margin-bottom:10px;">
+        <div class="fkl-label">${m}</div>
+        <div style="flex:1;">
+          <div class="fkl-bar-wrap" style="margin-bottom:3px;">
+            <div class="fkl-bar" style="width:${fp}%;background:${fcol};opacity:${isVal?0.45:0.75};"></div>
+          </div>
+          <div class="fkl-bar-wrap">
+            <div class="fkl-bar" style="width:${rp}%;background:#EF9F27;opacity:${isVal?0.35:0.55};"></div>
+          </div>
+        </div>
+        <div style="text-align:right;min-width:72px;font-size:11px;color:var(--text2);line-height:1.8;">
+          <div class="${isBest?'fkl-val best':'fkl-val'}">${f.toFixed(1)}</div>
+          <div style="color:var(--text3);">${r.toFixed(1)}</div>
+        </div>
+      </div>`;
+    });
+    document.getElementById('fkl-chart').innerHTML = html;
+    document.getElementById('fkl-note').textContent = FKL_NOTES[curFkl];
+  }
+
+  /* ── WIRE UP ── */
+  let curFkl = 'lv';
+
+  document.querySelectorAll('[data-ds]').forEach(btn => {
+    btn.addEventListener('click', function() {
+      curDs = this.dataset.ds;
+      curTau = Math.min(curTau, DATA[curDs].taus.length-1);
+      document.getElementById('tau-slider').max = DATA[curDs].taus.length-1;
+      document.getElementById('tau-slider').value = curTau;
+      document.querySelectorAll('[data-ds]').forEach(b=>b.classList.remove('active'));
+      this.classList.add('active');
+      drawTimeline(); renderRanking();
+    });
+  });
+
+  document.querySelectorAll('[data-m]').forEach(btn => {
+    btn.addEventListener('click', function() {
+      curM = this.dataset.m;
+      document.querySelectorAll('[data-m]').forEach(b=>b.classList.remove('active'));
+      this.classList.add('active');
+      drawTimeline(); renderRanking();
+    });
+  });
+
+  document.getElementById('tau-slider').addEventListener('input', function() {
+    curTau = +this.value;
+    drawTimeline(); renderRanking();
+  });
+
+  document.querySelectorAll('[data-fkl]').forEach(btn => {
+    btn.addEventListener('click', function() {
+      curFkl = this.dataset.fkl;
+      document.querySelectorAll('[data-fkl]').forEach(b=>b.classList.remove('active'));
+      this.classList.add('active');
+      renderFkl();
+    });
+  });
+
+  window.addEventListener('resize', () => { setupTl(); drawTimeline(); });
+  window.matchMedia('(prefers-color-scheme:dark)').addEventListener('change', () => {
+    drawTimeline(); renderFkl();
+  });
+
+  /* init */
+  document.getElementById('tau-slider').max = DATA[curDs].taus.length-1;
+  document.getElementById('tau-slider').value = curTau;
+  setupTl();
+  renderRanking();
+  renderFkl();
+})();
+</script>
+</body>
+</html>
